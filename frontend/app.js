@@ -1,4 +1,5 @@
-﻿const API_BASE = (window.location.protocol === 'file:' || window.location.port !== '8000') ? 'http://127.0.0.1:8000' : '';
+const isLocalDevPort = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '8000';
+const API_BASE = (window.location.protocol === 'file:' || isLocalDevPort) ? 'http://127.0.0.1:8000' : '';
 /**
  * AI Agriculture Assistant - Frontend Application Logic
  * Multilingual UI (English / मराठी), Voice STT/TTS, and Pipeline Integration.
