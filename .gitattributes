@@ -1,0 +1,3 @@
+# Ignore runner helper scripts from GitHub language statistics
+*.bat linguist-detectable=false
+*.ps1 linguist-detectable=false
