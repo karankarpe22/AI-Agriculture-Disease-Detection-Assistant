@@ -1,0 +1,32 @@
+{
+  "phase": "fine_tuning",
+  "model": "MobileNetV3-Large",
+  "unfrozen_blocks": 3,
+  "device": "cpu",
+  "epochs": 2,
+  "learning_rate": 0.0001,
+  "train_images": 1950,
+  "full_train_images": 14080,
+  "validation_images": 650,
+  "full_validation_images": 3018,
+  "best_validation_accuracy": 0.8353846153846154,
+  "elapsed_seconds": 159.07404810000003,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.126348557472229,
+      "train_accuracy": 0.958974358974359,
+      "validation_loss": 0.6822680438481844,
+      "validation_accuracy": 0.7984615384615384,
+      "lr": 5.05e-05
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.06276743807423955,
+      "train_accuracy": 0.9871794871794872,
+      "validation_loss": 0.5702101261569903,
+      "validation_accuracy": 0.8353846153846154,
+      "lr": 1e-06
+    }
+  ]
+}

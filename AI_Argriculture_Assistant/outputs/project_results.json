@@ -1,0 +1,76 @@
+{
+  "project_name": "AI Agriculture Assistant",
+  "dataset_name": "PlantVillage (curated subset)",
+  "number_of_crops": 3,
+  "crops": [
+    "Bell pepper",
+    "Potato",
+    "Tomato"
+  ],
+  "number_of_disease_classes": 13,
+  "total_images": 20113,
+  "split_counts": {
+    "train": 14080,
+    "validation": 3018,
+    "test": 3015
+  },
+  "split_proportions": {
+    "train": 0.70,
+    "validation": 0.15,
+    "test": 0.15
+  },
+  "model_used": "MobileNetV3-Large",
+  "pretrained_weights": "MobileNet_V3_Large_Weights.DEFAULT",
+  "training_strategy": "Two-Stage Transfer Learning (Stage 1 Head Training + Stage 2 Upper Backbone Fine-Tuning)",
+  "training_epochs": {
+    "stage_1_head_epochs": 3,
+    "stage_2_finetune_epochs": 2
+  },
+  "best_validation_accuracy": 0.8354,
+  "test_accuracy": 0.8189,
+  "precision_macro": 0.8699,
+  "recall_macro": 0.8170,
+  "f1_score_macro": 0.8164,
+  "f1_score_weighted": 0.8139,
+  "average_confidence": 0.9100,
+  "average_inference_time_ms_per_image": 21.58,
+  "model_size_mb": 16.29,
+  "hardware_device": "cpu",
+  "rag_knowledge_base": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "vector_store": "FAISS (FlatIP / Cosine Similarity)",
+    "documents_count": 13,
+    "indexed_sections_count": 62,
+    "primary_sources": [
+      "ICAR - Indian Institute of Horticultural Research (IIHR), Bengaluru",
+      "ICAR - Central Potato Research Institute (CPRI), Shimla",
+      "ICAR - Indian Institute of Vegetable Research (IIVR), Varanasi",
+      "Tamil Nadu Agricultural University (TNAU) Agritech Portal"
+    ]
+  },
+  "weather_service": {
+    "primary_api": "OpenWeatherMap",
+    "live_fallback_api": "Open-Meteo Live API",
+    "risk_analysis": "Automated microclimatic fungal/bacterial/pest risk assessment"
+  },
+  "generative_ai_guidance": {
+    "provider": "Google Gemini (Official Google GenAI SDK)",
+    "model": "gemini-2.5-flash",
+    "supported_languages": [
+      "English",
+      "Marathi (मराठी)"
+    ],
+    "grounding_constraint": "Strictly evidence-grounded on RAG context; does not claim direct image diagnosis"
+  },
+  "voice_accessibility": {
+    "text_to_speech": "gTTS (Marathi 'mr' and English 'en')",
+    "speech_to_text": "Browser Web Speech API (mr-IN / en-IN)"
+  },
+  "limitations": [
+    "Controlled-environment dataset bias: PlantVillage images are captured on uniform or laboratory-like backgrounds, which introduces domain shift when applied to cluttered farm environments with soil and weed noise.",
+    "Near-duplicate images in source dataset: While exact byte-identical duplicates were quarantined, near-identical photos from the same shoot may exist across splits.",
+    "Softmax confidence is not real-world calibrated probability; low-confidence warnings (<60%) must be heeded.",
+    "Weather API dependency: Real-time risk scoring relies on network connectivity and local meteorological station accuracy.",
+    "RAG and Gemini advice is advisory: It supports but does NOT replace licensed agricultural extension officers or Krishi Vigyan Kendra (KVK) agronomists."
+  ]
+}

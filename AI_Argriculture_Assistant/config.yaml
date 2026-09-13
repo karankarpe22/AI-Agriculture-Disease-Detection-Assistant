@@ -1,0 +1,63 @@
+project:
+  name: AI Agriculture Assistant
+  random_seed: 42
+
+dataset:
+  # Place a class-folder dataset here, e.g. data/raw/PlantVillage-Dataset/raw/color/
+  raw_dir: data/raw
+  processed_dir: data/processed
+  split_dirs:
+    train: data/train
+    validation: data/validation
+    test: data/test
+  # Selected only after inspection of the locally downloaded PlantVillage data.
+  # Two severely underrepresented classes are excluded from this baseline:
+  # Potato___healthy (152 images), Tomato__Tomato_mosaic_virus (373 images).
+  selected_classes:
+    - Pepper__bell___Bacterial_spot
+    - Pepper__bell___healthy
+    - Potato___Early_blight
+    - Potato___Late_blight
+    - Tomato_Bacterial_spot
+    - Tomato_Early_blight
+    - Tomato_Late_blight
+    - Tomato_Leaf_Mold
+    - Tomato_Septoria_leaf_spot
+    - Tomato_Spider_mites_Two_spotted_spider_mite
+    - Tomato__Target_Spot
+    - Tomato__Tomato_YellowLeaf__Curl_Virus
+    - Tomato_healthy
+  class_configuration:
+    - {class_index: 0, crop: "Bell pepper", disease: "Bacterial spot", dataset_class: "Pepper__bell___Bacterial_spot", dataset_location: "data/raw/PlantVillage/Pepper__bell___Bacterial_spot"}
+    - {class_index: 1, crop: "Bell pepper", disease: "Healthy", dataset_class: "Pepper__bell___healthy", dataset_location: "data/raw/PlantVillage/Pepper__bell___healthy"}
+    - {class_index: 2, crop: "Potato", disease: "Early blight", dataset_class: "Potato___Early_blight", dataset_location: "data/raw/PlantVillage/Potato___Early_blight"}
+    - {class_index: 3, crop: "Potato", disease: "Late blight", dataset_class: "Potato___Late_blight", dataset_location: "data/raw/PlantVillage/Potato___Late_blight"}
+    - {class_index: 4, crop: "Tomato", disease: "Bacterial spot", dataset_class: "Tomato_Bacterial_spot", dataset_location: "data/raw/PlantVillage/Tomato_Bacterial_spot"}
+    - {class_index: 5, crop: "Tomato", disease: "Early blight", dataset_class: "Tomato_Early_blight", dataset_location: "data/raw/PlantVillage/Tomato_Early_blight"}
+    - {class_index: 6, crop: "Tomato", disease: "Late blight", dataset_class: "Tomato_Late_blight", dataset_location: "data/raw/PlantVillage/Tomato_Late_blight"}
+    - {class_index: 7, crop: "Tomato", disease: "Leaf mold", dataset_class: "Tomato_Leaf_Mold", dataset_location: "data/raw/PlantVillage/Tomato_Leaf_Mold"}
+    - {class_index: 8, crop: "Tomato", disease: "Septoria leaf spot", dataset_class: "Tomato_Septoria_leaf_spot", dataset_location: "data/raw/PlantVillage/Tomato_Septoria_leaf_spot"}
+    - {class_index: 9, crop: "Tomato", disease: "Spider mites (two-spotted spider mite)", dataset_class: "Tomato_Spider_mites_Two_spotted_spider_mite", dataset_location: "data/raw/PlantVillage/Tomato_Spider_mites_Two_spotted_spider_mite"}
+    - {class_index: 10, crop: "Tomato", disease: "Target spot", dataset_class: "Tomato__Target_Spot", dataset_location: "data/raw/PlantVillage/Tomato__Target_Spot"}
+    - {class_index: 11, crop: "Tomato", disease: "Tomato yellow leaf curl virus", dataset_class: "Tomato__Tomato_YellowLeaf__Curl_Virus", dataset_location: "data/raw/PlantVillage/Tomato__Tomato_YellowLeaf__Curl_Virus"}
+    - {class_index: 12, crop: "Tomato", disease: "Healthy", dataset_class: "Tomato_healthy", dataset_location: "data/raw/PlantVillage/Tomato_healthy"}
+  allowed_extensions: [".jpg", ".jpeg", ".png", ".bmp", ".webp"]
+  split_ratios:
+    train: 0.70
+    validation: 0.15
+    test: 0.15
+  copy_mode: copy  # change to symlink only when supported by the target platform
+
+model:
+  name: mobilenet_v3_large
+  pretrained_weights: MobileNet_V3_Large_Weights.DEFAULT
+  image_size: 224
+  num_classes: 13
+
+training:
+  # 64 is selected for the CPU-only baseline host; the full dataset is retained.
+  batch_size: 64
+  head_learning_rate: 0.001
+  finetune_learning_rate: 0.0001
+  head_epochs: 10
+  finetune_epochs: 10

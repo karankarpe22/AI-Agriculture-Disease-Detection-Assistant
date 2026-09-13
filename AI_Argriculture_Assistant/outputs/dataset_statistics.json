@@ -1,0 +1,117 @@
+{
+  "class_root": "data/raw/PlantVillage",
+  "classes": [
+    "Pepper__bell___Bacterial_spot",
+    "Pepper__bell___healthy",
+    "Potato___Early_blight",
+    "Potato___Late_blight",
+    "Tomato_Bacterial_spot",
+    "Tomato_Early_blight",
+    "Tomato_Late_blight",
+    "Tomato_Leaf_Mold",
+    "Tomato_Septoria_leaf_spot",
+    "Tomato_Spider_mites_Two_spotted_spider_mite",
+    "Tomato__Target_Spot",
+    "Tomato__Tomato_YellowLeaf__Curl_Virus",
+    "Tomato_healthy"
+  ],
+  "class_counts_valid": {
+    "Pepper__bell___Bacterial_spot": 997,
+    "Pepper__bell___healthy": 1478,
+    "Potato___Early_blight": 1000,
+    "Potato___Late_blight": 1000,
+    "Tomato_Bacterial_spot": 2127,
+    "Tomato_Early_blight": 1000,
+    "Tomato_Late_blight": 1909,
+    "Tomato_Leaf_Mold": 952,
+    "Tomato_Septoria_leaf_spot": 1771,
+    "Tomato_Spider_mites_Two_spotted_spider_mite": 1676,
+    "Tomato__Target_Spot": 1404,
+    "Tomato__Tomato_YellowLeaf__Curl_Virus": 3208,
+    "Tomato_healthy": 1591
+  },
+  "total_valid_images": 20113,
+  "corrupt_images": [],
+  "exact_duplicate_groups": [
+    [
+      "Tomato_Late_blight/1a69b38b-c4eb-42c4-9584-bcb14fb8db0c___GHLB2 Leaf 9011.JPG",
+      "Tomato_Late_blight/2c47b891-3c97-48f1-a2cc-5aa53d3a1148___GHLB2 Leaf 9011.JPG"
+    ],
+    [
+      "Tomato_Late_blight/3fae9c64-18f0-4a67-9f97-554248bb1bed___GHLB_PS Leaf 24 Day 16.jpg",
+      "Tomato_Late_blight/5de6da85-f8c4-48c4-b463-3e6bd78884cc___GHLB_PS Leaf 24 Day 16.jpg"
+    ],
+    [
+      "Tomato_Late_blight/48c55974-9fe9-4f4b-94f7-c8cd127d1e05___GHLB_PS Leaf 23.7 Day 13.jpg",
+      "Tomato_Late_blight/bd4f09bd-ee85-4ab1-bce0-8cde3fdd7f1b___GHLB_PS Leaf 23.7 Day 13.jpg"
+    ],
+    [
+      "Tomato_Late_blight/5688ea99-c949-41d0-bbab-9cbf0ffb8bcd___GHLB2 Leaf 8677.JPG",
+      "Tomato_Late_blight/e20107e7-137f-400e-817f-5dc4c58e5d70___GHLB2 Leaf 8677.JPG"
+    ],
+    [
+      "Tomato_Late_blight/5f21282c-e2ef-4c4a-ace1-b5701fe7effc___GHLB2 Leaf 8999.JPG",
+      "Tomato_Late_blight/e5d707cd-077c-43af-bda9-6138e516ff51___GHLB2 Leaf 8999.JPG"
+    ],
+    [
+      "Tomato_Late_blight/861d8b00-57a4-46b0-b51a-09d102dbe119___GHLB_PS Leaf 24 Day 13.jpg",
+      "Tomato_Late_blight/d82b634e-9a19-497b-b698-aaf100d622a1___GHLB_PS Leaf 24 Day 13.jpg"
+    ],
+    [
+      "Tomato_Late_blight/98586693-fe1f-4ea0-8e27-4501b61cf09b___GHLB_PS Leaf 23.5 Day 13.jpg",
+      "Tomato_Late_blight/c1775bad-7c02-41fb-bb7d-f8df91d60ac3___GHLB_PS Leaf 23.5 Day 13.jpg"
+    ],
+    [
+      "Tomato_Late_blight/d6e6897a-5083-4914-9903-804c5684a956___GHLB2 Leaf 102.JPG",
+      "Tomato_Late_blight/d81682aa-746b-4e07-af2b-52ebb6f4c017___GHLB2 Leaf 102.JPG"
+    ],
+    [
+      "Tomato_healthy/068e324c-faf6-40d6-8f83-578907f1cac5___GH_HL Leaf 466.1.JPG",
+      "Tomato_healthy/34c81c57-e1fa-49dd-a49d-34fe8b2385fe___GH_HL Leaf 466.1.JPG"
+    ],
+    [
+      "Tomato_healthy/1af0bfe1-4bcf-4b8b-be66-5d0953eb647e___GH_HL Leaf 482.2.JPG",
+      "Tomato_healthy/cfd491d6-4af5-4728-8f0e-0d330a07174a___GH_HL Leaf 482.2.JPG"
+    ],
+    [
+      "Tomato_healthy/37203047-d8ba-43f7-b31e-d496c41c569c___GH_HL Leaf 389.JPG",
+      "Tomato_healthy/505465db-407b-4e0a-8110-7479dad5261c___GH_HL Leaf 389.JPG"
+    ],
+    [
+      "Tomato_healthy/37aad83b-7ff8-4b35-b3ed-fb8e0f54910b___GH_HL Leaf 342.1.JPG",
+      "Tomato_healthy/e786ac89-29fe-47e3-b49e-b9a9ee7edd9d___GH_HL Leaf 342.1.JPG"
+    ],
+    [
+      "Tomato_healthy/488feb1c-4b9f-44e7-8aa6-4103a9601f5f___GH_HL Leaf 434.JPG",
+      "Tomato_healthy/a5de43e7-fc2f-4a14-a8e6-c0f2f94c84f1___GH_HL Leaf 434.JPG"
+    ],
+    [
+      "Tomato_healthy/9662364c-aaba-45e3-b907-10792d60578c___GH_HL Leaf 220.JPG",
+      "Tomato_healthy/d2ce7896-6fa4-45e6-96c5-d162da0e3e1c___GH_HL Leaf 220.JPG"
+    ]
+  ],
+  "severely_underrepresented_classes": {
+    "Potato___healthy": 152,
+    "Tomato__Tomato_mosaic_virus": 373
+  },
+  "split_counts": {
+    "train": 14080,
+    "validation": 3018,
+    "test": 3015
+  },
+  "selected_classes": [
+    "Pepper__bell___Bacterial_spot",
+    "Pepper__bell___healthy",
+    "Potato___Early_blight",
+    "Potato___Late_blight",
+    "Tomato_Bacterial_spot",
+    "Tomato_Early_blight",
+    "Tomato_Late_blight",
+    "Tomato_Leaf_Mold",
+    "Tomato_Septoria_leaf_spot",
+    "Tomato_Spider_mites_Two_spotted_spider_mite",
+    "Tomato__Target_Spot",
+    "Tomato__Tomato_YellowLeaf__Curl_Virus",
+    "Tomato_healthy"
+  ]
+}

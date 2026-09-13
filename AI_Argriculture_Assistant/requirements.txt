@@ -1,0 +1,30 @@
+﻿--extra-index-url https://download.pytorch.org/whl/cpu
+# Core ML & Vision
+torch>=2.2
+torchvision>=0.17
+Pillow>=10.0
+scikit-learn>=1.3
+PyYAML>=6.0
+matplotlib>=3.8
+seaborn>=0.13
+
+# RAG & Embeddings
+sentence-transformers>=3.0
+faiss-cpu>=1.8
+
+# Backend & Web API
+fastapi>=0.110
+uvicorn[standard]>=0.28
+pydantic>=2.6
+python-multipart>=0.0.9
+requests>=2.31
+python-dotenv>=1.0
+
+# Generative AI
+google-genai>=0.1.1
+
+# Voice & Accessibility
+gTTS>=2.5
+
+# Testing & Quality
+pytest>=8.0

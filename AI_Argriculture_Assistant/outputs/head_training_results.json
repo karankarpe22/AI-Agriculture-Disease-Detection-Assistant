@@ -1,0 +1,40 @@
+{
+  "phase": "head_training",
+  "model": "MobileNetV3-Large",
+  "pretrained_weights": "MobileNet_V3_Large_Weights.DEFAULT",
+  "backbone_frozen": true,
+  "device": "cpu",
+  "epochs": 3,
+  "train_images": 1950,
+  "full_train_images": 14080,
+  "validation_images": 650,
+  "full_validation_images": 3018,
+  "best_validation_accuracy": 0.7476923076923077,
+  "elapsed_seconds": 256.03424640000003,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.255650695531796,
+      "train_accuracy": 0.6512820512820513,
+      "validation_loss": 1.512832626746251,
+      "validation_accuracy": 0.48923076923076925,
+      "lr": 0.001
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.4412993917404077,
+      "train_accuracy": 0.8569230769230769,
+      "validation_loss": 1.213613774409661,
+      "validation_accuracy": 0.6184615384615385,
+      "lr": 0.001
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.3312183017302782,
+      "train_accuracy": 0.8912820512820513,
+      "validation_loss": 0.8104791979606335,
+      "validation_accuracy": 0.7476923076923077,
+      "lr": 0.001
+    }
+  ]
+}
