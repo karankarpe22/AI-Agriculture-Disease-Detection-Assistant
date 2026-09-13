@@ -169,6 +169,40 @@ class AgriculturalRAG:
         self.chunks_file.write_text(json.dumps(self.chunks, indent=2), encoding="utf-8")
         print(f"FAISS index saved to {self.index_file} ({len(self.chunks)} chunks)")
 
+    def _score_chunk(
+        self,
+        chunk: dict,
+        crop: str | None,
+        disease: str | None,
+        question: str | None,
+    ) -> float:
+        score = 0.0
+        c_crop = (chunk.get("crop") or "").lower()
+        c_dis = (chunk.get("disease") or "").lower()
+        c_text = ((chunk.get("heading") or "") + " " + (chunk.get("content") or "")).lower()
+
+        if crop and crop.lower() in c_crop:
+            score += 6.0
+        if disease:
+            for w in disease.lower().split():
+                if len(w) > 2 and w in c_dis:
+                    score += 5.0
+        if question and question.strip():
+            q_words = [w.lower() for w in re.findall(r"\w+", question) if len(w) > 3]
+            for w in q_words:
+                if w in c_text:
+                    score += 1.5
+
+        h = (chunk.get("heading") or "").lower()
+        if any(kw in h for kw in ["management", "treatment", "control", "fungicide"]):
+            score += 3.0
+        elif "symptom" in h:
+            score += 1.5
+        elif "condition" in h or "environment" in h:
+            score += 1.0
+
+        return score
+
     def retrieve(
         self,
         crop: str | None = None,
@@ -177,49 +211,33 @@ class AgriculturalRAG:
         top_k: int = 3,
     ) -> list[dict[str, Any]]:
         """Retrieve relevant agricultural evidence chunks based on disease and question."""
-        if self.index is None or not self.chunks:
+        if not self.chunks:
             self.build_index()
 
-        # Construct contextual search query
-        query_parts = []
-        if crop:
-            query_parts.append(crop)
-        if disease:
-            clean_disease = re.sub(r"\(.*?\)", "", disease).strip()
-            query_parts.append(clean_disease)
-        if question and question.strip():
-            query_parts.append(question.strip())
-        else:
-            query_parts.append("management symptoms treatment prevention")
+        if self.chunks:
+            scored = []
+            for idx, chunk in enumerate(self.chunks):
+                s = self._score_chunk(chunk, crop, disease, question)
+                scored.append((s, idx))
 
-        query_str = " ".join(query_parts)
+            scored.sort(key=lambda x: x[0], reverse=True)
 
-        encoder = self._ensure_encoder()
-        query_vec = encoder.encode([query_str], convert_to_numpy=True, normalize_embeddings=True).astype(np.float32)
+            results = []
+            seen_headings = set()
+            for s, idx in scored:
+                chunk = self.chunks[idx].copy()
+                chunk["similarity_score"] = round(float(s), 4)
+                h_key = f"{chunk.get('file')}:{chunk.get('heading')}"
+                if h_key not in seen_headings:
+                    seen_headings.add(h_key)
+                    results.append(chunk)
+                if len(results) >= top_k:
+                    break
 
-        k = min(top_k * 2, len(self.chunks))
-        scores, indices = self.index.search(query_vec, k)
+            if results:
+                return results[:top_k]
 
-        results = []
-        seen_files = set()
-
-        # Prioritize diverse and highly relevant chunks matching crop/disease
-        for score, idx in zip(scores[0], indices[0]):
-            chunk = self.chunks[idx].copy()
-            chunk["similarity_score"] = round(float(score), 4)
-
-            # Prioritize matching crop/disease if present
-            crop_match = bool(crop and crop.lower() in (chunk["crop"] or "").lower())
-            disease_match = bool(disease and any(w.lower() in (chunk["disease"] or "").lower() for w in disease.split() if len(w) > 3))
-
-            if crop_match or disease_match or len(results) < top_k:
-                results.append(chunk)
-                seen_files.add(chunk["file"])
-
-            if len(results) >= top_k:
-                break
-
-        return results[:top_k]
+        return []
 
     @staticmethod
     def get_sources_summary(evidence_list: list[dict[str, Any]]) -> list[dict[str, str]]:
