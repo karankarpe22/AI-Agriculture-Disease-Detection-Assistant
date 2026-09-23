@@ -1,4 +1,4 @@
-"""Phase 10 & 13: Google Gemini Generative AI Guidance Layer with Marathi & English support."""
+"""Phase 10 & 13: Google Gemini Generative AI Guidance Layer with Multi-Model Fallback & Contextual Q&A."""
 from __future__ import annotations
 
 import json
@@ -9,13 +9,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Priority models: uses high-capacity, low-latency models first to avoid 429 Quota Exhaustion
+DEFAULT_MODELS = [
+    os.getenv("GEMINI_MODEL", "").strip() or "gemini-flash-lite-latest",
+    "gemini-3.6-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-flash",
+]
+# Filter out empty entries
+DEFAULT_MODELS = [m for m in DEFAULT_MODELS if m]
+
 
 class GeminiGuidanceService:
     """Provides evidence-grounded, contextual agricultural guidance using Google Gemini."""
 
-    def __init__(self, api_key: str | None = None, model_name: str = "gemini-2.5-flash") -> None:
+    def __init__(self, api_key: str | None = None, model_name: str | None = None) -> None:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "").strip()
-        self.model_name = model_name
+        self.model_name = model_name or os.getenv("GEMINI_MODEL", "").strip() or "gemini-flash-lite-latest"
         self._client = None
 
     def _get_client(self):
@@ -41,31 +51,45 @@ class GeminiGuidanceService:
         language: str = "english",
         is_low_confidence: bool = False,
     ) -> dict[str, Any]:
-        """Generate structured agricultural guidance based strictly on inputs."""
+        """Generate structured agricultural guidance with multi-model fallback."""
         lang = (language or "english").lower().strip()
         is_marathi = lang in ["marathi", "mr", "मराठी"]
 
-        # If Gemini API key is available, call official Google GenAI SDK
+        # If Gemini API key is available, call official Google GenAI SDK across candidate models
         client = self._get_client()
         if client:
-            try:
-                guidance = self._call_gemini(
-                    client=client,
-                    crop=crop,
-                    disease=disease,
-                    confidence=confidence,
-                    weather=weather,
-                    evidence=retrieved_evidence,
-                    question=farmer_question,
-                    is_marathi=is_marathi,
-                    is_low_confidence=is_low_confidence,
-                )
-                if guidance:
-                    return guidance
-            except Exception as e:
-                print(f"Gemini generation call failed ({e}). Falling back to grounded RAG formatter.")
+            # Build list of candidate models starting with preferred model
+            models_to_try = [self.model_name] + [m for m in DEFAULT_MODELS if m != self.model_name]
+            for m in models_to_try:
+                try:
+                    guidance = self._call_gemini(
+                        client=client,
+                        model=m,
+                        crop=crop,
+                        disease=disease,
+                        confidence=confidence,
+                        weather=weather,
+                        evidence=retrieved_evidence,
+                        question=farmer_question,
+                        is_marathi=is_marathi,
+                        is_low_confidence=is_low_confidence,
+                    )
+                    if guidance:
+                        return guidance
+                except Exception as e:
+                    err_str = str(e)
+                    is_rate_limit = "429" in err_str or "RESOURCE_EXHAUSTED" in err_str
+                    is_busy = "503" in err_str or "UNAVAILABLE" in err_str
+                    if is_rate_limit or is_busy:
+                        print(f"Gemini model '{m}' rate-limited or busy ({'429 Quota' if is_rate_limit else '503 Busy'}). Trying next candidate model...")
+                        continue
+                    else:
+                        print(f"Gemini call on '{m}' failed ({e}). Trying next model...")
+                        continue
 
-        # Robust Evidence-Grounded Fallback Engine (No API key or API call failed)
+            print("All Gemini candidate models were exhausted or unavailable. Falling back to grounded RAG formatter.")
+
+        # Robust Evidence-Grounded Fallback Engine
         return self._fallback_grounded_guidance(
             crop=crop,
             disease=disease,
@@ -103,15 +127,15 @@ class GeminiGuidanceService:
         )
 
         target_lang = "Marathi (मराठी)" if is_marathi else "English"
-
         has_specific_question = bool(question and question.strip())
 
         if has_specific_question:
             qa_instruction = f"""CRITICAL Q&A INSTRUCTION:
 The farmer asked this SPECIFIC QUESTION: "{question.strip()}"
 You MUST provide a direct, comprehensive, empathetic, and highly actionable answer addressing this EXACT question in the "direct_answer" field.
-- If the farmer asks whether a specific spray/treatment (e.g. neem oil, chemical, fertilizer, bio-agent) is effective, answer directly whether it is recommended, why or why not, and how/when to use it based on ICAR evidence.
-- If the farmer asks about timing, dosage, watering, or pre-harvest waiting periods, provide specific practical figures.
+- If the farmer asks "where does this occur", explain precisely which plant organs (lower foliage, stems, tubers, flowers, fruits), canopy position, and field conditions it appears on.
+- If the farmer asks "what is this" or "what", define the disease, the causative fungal/bacterial pathogen, and what it does to the plant.
+- If the farmer asks about a specific chemical, organic remedy (like neem oil), watering schedule, or harvest safety, address it directly with exact dosage/timing grounded in ICAR evidence.
 - Do NOT give a vague reply. Make the "direct_answer" the centerpiece of your advisory in {target_lang}."""
         else:
             qa_instruction = """No specific question was submitted. In the "direct_answer" field, provide a clear 2-3 sentence executive summary of the most urgent immediate next step the farmer must take today to protect their crop."""
@@ -158,6 +182,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
     def _call_gemini(
         self,
         client: Any,
+        model: str,
         crop: str,
         disease: str,
         confidence: float,
@@ -172,7 +197,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
         )
 
         response = client.models.generate_content(
-            model=self.model_name,
+            model=model,
             contents=prompt,
         )
 
@@ -185,7 +210,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
         try:
             parsed = json.loads(clean_text)
             parsed["language"] = "marathi" if is_marathi else "english"
-            parsed["powered_by"] = f"Google Gemini ({self.model_name})"
+            parsed["powered_by"] = f"Google Gemini ({model})"
 
             # Ensure direct_answer exists in parsed result
             if "direct_answer" not in parsed or not parsed["direct_answer"]:
@@ -204,7 +229,6 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
 
             return parsed
         except Exception:
-            # If JSON parsing failed, package raw text into direct_answer & explanation
             fallback_answer = clean_text[:400]
             return {
                 "direct_answer": fallback_answer,
@@ -216,7 +240,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
                 "uncertainty_warning": "Low prediction confidence" if is_low_confidence else "",
                 "expert_advisory": "Consult your local Krishi Vigyan Kendra (KVK) for on-field verification.",
                 "language": "marathi" if is_marathi else "english",
-                "powered_by": f"Google Gemini ({self.model_name})",
+                "powered_by": f"Google Gemini ({model})",
             }
 
     def _fallback_grounded_guidance(
@@ -230,7 +254,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
         is_marathi: bool,
         is_low_confidence: bool,
     ) -> dict[str, Any]:
-        """Evidence-grounded fallback synthesized directly from RAG documents."""
+        """Evidence-grounded fallback synthesized directly from RAG documents with intelligent intent matching."""
         # Extract evidence content
         mgmt_points = []
         symptoms_points = []
@@ -245,17 +269,50 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
 
         weather_note = weather.get("risk_analysis", "Current weather conditions are within normal seasonal range.")
 
-        # Synthesize direct answer to farmer's question from evidence
+        # Intelligent Intent Matching for Offline Direct Answer
         if question and question.strip():
             q_clean = question.strip()
             q_lower = q_clean.lower()
-            is_neem = "neem" in q_lower or "कडुनिंब" in q_lower or "organic" in q_lower or "सेंद्रिय" in q_lower
-            is_spray = "spray" in q_lower or "फवारणी" in q_lower or "medicine" in q_lower or "औषध" in q_lower
-            is_water = "water" in q_lower or "पाणी" in q_lower or "irrigation" in q_lower
-            is_harvest = "harvest" in q_lower or "काढणी" in q_lower or "fruit" in q_lower or "फळ" in q_lower
+
+            is_where = any(k in q_lower for k in ["where", "occur", "location", "place", "part", "foliage", "leaf", "कुठे", "कोणत्या भागावर", "स्थान"])
+            is_what = any(k in q_lower for k in ["what", "meaning", "definition", "identify", "which disease", "काय", "काय आहे", "रोग कोणता"])
+            is_why = any(k in q_lower for k in ["why", "cause", "reason", "pathogen", "का", "कशामुळे", "कारण"])
+            is_symptom = any(k in q_lower for k in ["symptom", "sign", "look", "spot", "लक्षण", "दिसते कसे", "डाग"])
+            is_when = any(k in q_lower for k in ["when", "season", "time", "month", "कधी", "केव्हा", "हंगाम", "वेळ"])
+            is_neem = any(k in q_lower for k in ["neem", "organic", "bio", "कडुनिंब", "सेंद्रिय", "जैविक"])
+            is_spray = any(k in q_lower for k in ["spray", "fungicide", "pesticide", "chemical", "medicine", "dose", "फवारणी", "औषध", "कीटकनाशक", "बुरशीनाशक"])
+            is_water = any(k in q_lower for k in ["water", "irrigation", "moisture", "पाणी", "सिंचन", "ओलावा"])
+            is_harvest = any(k in q_lower for k in ["harvest", "fruit", "market", "eat", "phi", "waiting", "काढणी", "फळ", "खाण्यायोग्य", "तोडणी"])
 
             if is_marathi:
-                if is_neem:
+                if is_where:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): हा रोग प्रामुख्याने पिकाच्या जुन्या व खालच्या पानांवर प्रथम "
+                        f"लहान गोलसर तपकिरी डागांच्या स्वरूपात सुरू होतो. रोग वाढल्यास तो खोडावर आणि शेवटी "
+                        f"{'बटाट्याच्या कंदांवर' if 'बटाटा' in crop or 'potato' in crop.lower() else 'फळांवर'} पसरतो. "
+                        f"हवेतील उष्ण व दमट वातावरणामुळे रोगाचा प्रसार जमिनीकडून वरील शेंड्याकडे होतो."
+                    )
+                elif is_what:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): {crop} वरील '{disease}' हा एक बुरशीजन्य रोग आहे. "
+                        f"यामुळे पानांवर गोलाकार वलयी (concentric rings) असलेले गडद तपकिरी डाग पडतात. "
+                        f"पाने पिवळी पडून गळतात, ज्यामुळे प्रकाशसंश्लेषण कमी होऊन उत्पादनात मोठी घट होते."
+                    )
+                elif is_why:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): हा रोग 'अल्टरनेरिया' (Alternaria) बुरशीच्या प्रादुर्भावामुळे होतो. "
+                        f"सध्याचे तापमान ({weather.get('temperature_c', 25)}°C) आणि हवेतील आर्द्रता ({weather.get('humidity_percentage', 60)}%) "
+                        f"या बुरशीच्या बीजाणूंची वाढ वेगाने होण्यासाठी अत्यंत अनुकूल ठरते."
+                    )
+                elif is_symptom:
+                    symp = symptoms_points[0] if symptoms_points else "पानांवर गोल काळे-तपकिरी डाग व कडेने पिवळसर वलय दिसणे."
+                    direct_ans = f"तुमच्या प्रश्नासाठी ('{q_clean}'): {crop} {disease} ची मुख्य लक्षणे: {symp}"
+                elif is_when:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): हा रोग प्रामुख्याने पीक फुलोऱ्यात असताना किंवा पक्व होत असताना "
+                        f"ढगाळ आणि दमट हवामानात वेगाने उद्भवतो. सकाळच्या वेळी पानांवर दव साचल्यास प्रादुर्भाव वाढतो."
+                    )
+                elif is_neem:
                     direct_ans = (
                         f"तुमच्या प्रश्नासाठी ('{q_clean}'): होय, सेंद्रिय नियंत्रणासाठी ५% निंबोळी अर्क (Neem seed kernel extract) "
                         f"किंवा १०,००० ppm निंबोळी तेल २-३ मिली/लिटर पाण्यात मिसळून फवारणी करणे फायदेशीर ठरते. रोग जास्त असल्यास "
@@ -284,14 +341,42 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
                         f"अधिक माहितीसाठी स्थानिक कृषी विज्ञान केंद्राशी संपर्क साधा."
                     )
             else:
-                if is_neem:
+                if is_where:
+                    plant_parts = "tubers during harvest" if "potato" in crop.lower() else "fruits and stems"
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): This disease occurs primarily on the older, lower leaves "
+                        f"close to the ground first, appearing as circular brown necrotic spots with target-board concentric rings. "
+                        f"As the infection advances, it spreads upward through the foliage canopy, petioles, and eventually into the {plant_parts}. "
+                        f"Splashing water and humid microclimates accelerate its vertical progression on the plant."
+                    )
+                elif is_what:
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): {crop} {disease} is a destructive fungal condition "
+                        f"caused by the pathogen Alternaria. It forms characteristic target-pattern concentric rings on foliage, "
+                        f"causing leaf chlorosis (yellowing), early defoliation, and significant yield loss if left unmanaged."
+                    )
+                elif is_why:
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): This occurs due to fungal spore infection (Alternaria species) "
+                        f"favored by warm temperatures ({weather.get('temperature_c', 25)}°C) and alternating wet and dry conditions with "
+                        f"high ambient humidity ({weather.get('humidity_percentage', 60)}%). Spores overwinter in plant debris and soil."
+                    )
+                elif is_symptom:
+                    symp = symptoms_points[0] if symptoms_points else "Characteristic concentric dark-brown target rings on older foliage with yellow chlorotic halos."
+                    direct_ans = f"In response to your query ('{q_clean}'): Primary symptoms of {crop} {disease}: {symp}"
+                elif is_when:
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): Early blight typically appears mid-season as the crop enters tuber bulking or fruit setting, "
+                        f"especially when frequent morning dew or overhead irrigation keeps leaf surfaces wet for extended periods."
+                    )
+                elif is_neem:
                     direct_ans = (
                         f"In response to your query ('{q_clean}'): Yes, 5% Neem Seed Kernel Extract (NSKE) or neem oil "
                         f"(10,000 ppm @ 2-3 ml/L) is effective as an eco-friendly preventive spray for {crop} against early disease progression. "
                         f"However, if foliar infection exceeds 10-15%, follow up with ICAR-recommended targeted fungicides."
                     )
                 elif is_spray:
-                    best_spray = mgmt_points[0] if mgmt_points else "Mancozeb 75% WP @ 2.5 g/L or Copper Oxychloride @ 2.5 g/L"
+                    best_spray = mgmt_points[0] if mgmt_points else "Mancozeb 75% WP @ 2.0-2.5 g/L or Chlorothalonil 75% WP @ 2.0 g/L"
                     direct_ans = (
                         f"In response to your query ('{q_clean}'): For {crop} affected by {disease}, the ICAR-recommended primary spray is: "
                         f"{best_spray}. Spray during clear weather in morning hours for optimal leaf absorption."
@@ -304,7 +389,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
                 elif is_harvest:
                     direct_ans = (
                         f"In response to your query ('{q_clean}'): Always observe the mandatory pre-harvest interval (PHI) of 7-14 days after "
-                        f"applying any chemical fungicide before picking fruits for market consumption."
+                        f"applying any chemical fungicide before picking fruits or lifting tubers for market consumption."
                     )
                 else:
                     ref_point = mgmt_points[0] if mgmt_points else "Prune infected lower foliage and maintain proper canopy aeration."
