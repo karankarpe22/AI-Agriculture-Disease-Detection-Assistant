@@ -259,3 +259,21 @@ pytest -v
 2. **Confidence Calibration**: Raw softmax confidence does not equal true posterior probability. While temperature scaling and low-confidence thresholds help, expert verification remains necessary.
 3. **Pesticide Safety**: Chemical recommendations must always be verified with local agricultural officers (Krishi Vigyan Kendra) to adhere to state-specific chemical bans and current crop stage restrictions.
 4. **Future Extensions**: Implement edge quantization (TensorFlow Lite / ONNX Mobile), offline on-device speech recognition via Whisper-tiny, and expanding coverage to cotton, sugarcane, and soybean.
+
+---
+
+## 14. Project Specification & Architectural Documentation
+
+For in-depth engineering documentation, architecture diagrams, technical specifications, and development rules, refer to the project specification suite:
+
+| Document | Purpose & Scope |
+| :--- | :--- |
+| **[`agents.md`](agents.md)** | AI coding agent operating guidelines, inspection workflows, and development principles. |
+| **[`architecture.md`](architecture.md)** | Complete multi-tier system architecture, component boundaries, and ASCII data flow diagrams. |
+| **[`decisions.md`](decisions.md)** | Technical decisions log (MobileNetV3-Large, transfer learning, zero-RAM RAG, Gemini decoupling). |
+| **[`design.md`](design.md)** | Detailed interaction designs, user journeys, image quality checks, and endpoint matrices. |
+| **[`memory.md`](memory.md)** | Persistent ground-truth project memory, 13-class mappings, and verified evaluation metrics. |
+| **[`prd.md`](prd.md)** | Product Requirements Document for the implemented system, with scope status tags. |
+| **[`rules.md`](rules.md)** | Mandatory engineering rules, anti-hallucination constraints, and development invariants. |
+| **[`testing.md`](testing.md)** | Comprehensive testing strategy and verified 24-test matrix (100% pass rate). |
+| **[`trd.md`](trd.md)** | Technical Requirements Document covering dependencies, model layers, APIs, and hosting. |

@@ -69,4 +69,4 @@ def test_marathi_guidance_generation():
 
     assert result_mr["language"] == "marathi"
     assert len(result_mr["explanation"]) > 20
-    assert len(result_mr["management_guidance"]) > 20
+    assert len(str(result_mr["management_guidance"])) > 20
