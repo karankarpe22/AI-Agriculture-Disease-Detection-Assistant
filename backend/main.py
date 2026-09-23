@@ -1,20 +1,31 @@
-﻿"""Phase 11: FastAPI backend service for AI Agriculture Assistant."""
+"""Phase 11: High-Performance FastAPI backend service for AI Agriculture Assistant.
+
+Optimized with:
+- Lifespan Service Pre-Warming (eliminates cold-start latency for MobileNetV3 and FAISS)
+- Asynchronous Threadpool Execution via run_in_threadpool (prevents event loop blocking)
+- GZip Middleware compression for high-bandwidth payloads (Grad-CAM base64, RAG evidence)
+- Static Asset Caching with HTTP Cache-Control headers
+"""
 from __future__ import annotations
 
 import base64
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-
-load_dotenv()
 import io
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
+load_dotenv()
+
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from src.gemini.guidance_service import get_gemini_service
 from src.prediction.predict import DiseasePredictor
@@ -22,14 +33,63 @@ from src.rag.vector_store import get_rag_service
 from src.utils.voice_service import get_voice_service
 from src.weather.weather_service import get_weather_service
 
-# Initialize FastAPI app
+# Logging setup
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("backend.main")
+
+# Singleton services (lazy-loaded with startup warmup)
+_predictor: DiseasePredictor | None = None
+
+
+def get_predictor() -> DiseasePredictor:
+    """Singleton getter for DiseasePredictor to avoid reloading weights per request."""
+    global _predictor
+    if _predictor is None:
+        _predictor = DiseasePredictor()
+    return _predictor
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager: Pre-warms ML models and vector indices on startup."""
+    logger.info("Initializing AI Agriculture Assistant Backend...")
+    try:
+        # Pre-warm MobileNetV3 model into memory
+        predictor = await run_in_threadpool(get_predictor)
+        logger.info(f"MobileNetV3 loaded ({len(predictor.class_names)} classes) on {predictor.device}.")
+    except Exception as e:
+        logger.warning(f"Predictor warmup note: {e}")
+
+    try:
+        # Pre-warm FAISS RAG index and sentence embeddings
+        rag = await run_in_threadpool(get_rag_service)
+        logger.info(f"FAISS RAG service loaded ({len(rag.chunks)} research chunks).")
+    except Exception as e:
+        logger.warning(f"RAG service warmup note: {e}")
+
+    try:
+        # Pre-warm Weather microclimate service
+        weather = await run_in_threadpool(get_weather_service)
+        logger.info("Weather microclimate service initialized.")
+    except Exception as e:
+        logger.warning(f"Weather service warmup note: {e}")
+
+    yield
+    logger.info("Shutting down AI Agriculture Assistant Backend.")
+
+
+# Initialize FastAPI app with Lifespan
 app = FastAPI(
     title="AI Agriculture Assistant API",
-    description="Multilingual Crop Disease Detection and Evidence-Grounded Farmer Guidance",
+    description="Multilingual Crop Disease Detection, Microclimate Risk & Evidence-Grounded Farmer Guidance",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-# Enable CORS for local web interactions
+# GZip Compression Middleware (compresses responses > 1000 bytes)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Enable CORS for local and remote web interactions
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,17 +103,6 @@ frontend_dir = Path("frontend")
 if frontend_dir.exists():
     app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# Singleton services (lazy loaded)
-_predictor: DiseasePredictor | None = None
-
-
-def get_predictor() -> DiseasePredictor:
-    global _predictor
-    if _predictor is None:
-        _predictor = DiseasePredictor()
-    return _predictor
-
-
 # Security & file constraints
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
@@ -61,6 +110,7 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 
 def validate_image_file(file: UploadFile, content: bytes) -> None:
+    """Defensive validation for image upload: file size, extension, and MIME type."""
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
             status_code=400,
@@ -112,24 +162,29 @@ def serve_index():
     return {"message": "AI Agriculture Assistant API is operational. Visit /docs for Swagger UI."}
 
 
-
-
-
 @app.get("/styles.css")
 def serve_styles():
-    """Serve frontend stylesheet."""
+    """Serve frontend stylesheet with caching header."""
     css_file = Path("frontend/styles.css")
     if css_file.exists():
-        return FileResponse(css_file, media_type="text/css")
+        return FileResponse(
+            css_file,
+            media_type="text/css",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
     raise HTTPException(status_code=404, detail="styles.css not found")
 
 
 @app.get("/app.js")
 def serve_script():
-    """Serve frontend javascript."""
+    """Serve frontend javascript with caching header."""
     js_file = Path("frontend/app.js")
     if js_file.exists():
-        return FileResponse(js_file, media_type="application/javascript")
+        return FileResponse(
+            js_file,
+            media_type="application/javascript",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
     raise HTTPException(status_code=404, detail="app.js not found")
 
 
@@ -188,16 +243,16 @@ async def predict_crop_disease(
     image: UploadFile = File(..., description="Crop leaf photo"),
     include_gradcam: bool = Form(False),
 ):
-    """Run Image Quality Check -> MobileNetV3 disease classification."""
+    """Run Image Quality Check -> MobileNetV3 disease classification offloaded to threadpool."""
     content = await image.read()
     validate_image_file(image, content)
 
     predictor = get_predictor()
-    result = predictor.predict(content)
+    result = await run_in_threadpool(predictor.predict, content)
 
     if include_gradcam and result.get("success"):
         try:
-            cam_img = predictor.generate_gradcam(content)
+            cam_img = await run_in_threadpool(predictor.generate_gradcam, content)
             if cam_img:
                 buf = io.BytesIO()
                 cam_img.save(buf, format="JPEG")
@@ -209,10 +264,10 @@ async def predict_crop_disease(
 
 
 @app.post("/ask")
-def ask_question(request: AskRequest):
+async def ask_question(request: AskRequest):
     """Retrieve agricultural evidence and generate Gemini guidance for follow-up or standalone queries."""
     weather_service = get_weather_service()
-    weather_data = weather_service.get_weather(city=request.location)
+    weather_data = await run_in_threadpool(weather_service.get_weather, city=request.location)
 
     # Determine crop and disease context (support standalone Q&A without image)
     crop = request.crop
@@ -229,7 +284,8 @@ def ask_question(request: AskRequest):
     resolved_disease = request.disease or "General Agronomic Inquiry"
 
     rag = get_rag_service()
-    evidence = rag.retrieve(
+    evidence = await run_in_threadpool(
+        rag.retrieve,
         crop=crop if crop and crop != "General / Solanaceae" else None,
         disease=request.disease,
         question=request.question,
@@ -238,7 +294,8 @@ def ask_question(request: AskRequest):
     sources = rag.get_sources_summary(evidence)
 
     gemini = get_gemini_service()
-    guidance = gemini.generate_guidance(
+    guidance = await run_in_threadpool(
+        gemini.generate_guidance,
         crop=resolved_crop,
         disease=resolved_disease,
         confidence=request.confidence,
@@ -277,9 +334,9 @@ async def analyze_leaf(
     content = await image.read()
     validate_image_file(image, content)
 
-    # 1. Image Quality & Classification
+    # 1. Image Quality & Classification (offloaded to threadpool)
     predictor = get_predictor()
-    pred_result = predictor.predict(content)
+    pred_result = await run_in_threadpool(predictor.predict, content)
 
     # If quality check failed, return early with informative warning
     if not pred_result.get("success"):
@@ -301,9 +358,9 @@ async def analyze_leaf(
     # 2. Live Weather context
     try:
         weather_service = get_weather_service()
-        weather_data = weather_service.get_weather(city=location)
+        weather_data = await run_in_threadpool(weather_service.get_weather, city=location)
     except Exception as e:
-        print(f"Weather service error: {e}")
+        logger.warning(f"Weather service error: {e}")
         weather_data = {
             "success": False,
             "provider": "Fallback",
@@ -313,20 +370,21 @@ async def analyze_leaf(
             "risk_analysis": "Weather service currently unavailable; follow standard preventative measures.",
         }
 
-    # 3. RAG Retrieval from Knowledge Base
+    # 3. RAG Retrieval from Knowledge Base (offloaded to threadpool)
     try:
         rag = get_rag_service()
-        evidence = rag.retrieve(crop=crop, disease=disease, question=question, top_k=3)
+        evidence = await run_in_threadpool(rag.retrieve, crop=crop, disease=disease, question=question, top_k=3)
         sources = rag.get_sources_summary(evidence)
     except Exception as e:
-        print(f"RAG retrieval error: {e}")
+        logger.warning(f"RAG retrieval error: {e}")
         evidence = []
         sources = []
 
-    # 4. Contextual Guidance from Gemini
+    # 4. Contextual Guidance from Gemini (offloaded to threadpool)
     try:
         gemini = get_gemini_service()
-        guidance = gemini.generate_guidance(
+        guidance = await run_in_threadpool(
+            gemini.generate_guidance,
             crop=crop,
             disease=disease,
             confidence=confidence,
@@ -337,7 +395,7 @@ async def analyze_leaf(
             is_low_confidence=is_low_confidence,
         )
     except Exception as e:
-        print(f"Gemini service error: {e}")
+        logger.warning(f"Gemini service error: {e}")
         guidance = {
             "explanation": f"Observed foliar symptoms are characteristic of {crop} {disease}.",
             "weather_interpretation": "Maintain regular monitoring under prevailing regional conditions.",
@@ -350,17 +408,17 @@ async def analyze_leaf(
             "powered_by": "ICAR Grounded Advisory",
         }
 
-    # 5. Optional Grad-CAM explainability
+    # 5. Optional Grad-CAM explainability (offloaded to threadpool)
     gradcam_base64 = None
     if include_gradcam:
         try:
-            cam_img = predictor.generate_gradcam(content)
+            cam_img = await run_in_threadpool(predictor.generate_gradcam, content)
             if cam_img:
                 buf = io.BytesIO()
                 cam_img.save(buf, format="JPEG")
                 gradcam_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         except Exception as e:
-            print(f"Grad-CAM error: {e}")
+            logger.warning(f"Grad-CAM error: {e}")
 
     direct_answer = guidance.get("direct_answer", "")
     return {
@@ -385,13 +443,17 @@ async def analyze_leaf(
 
 
 @app.post("/tts")
-def text_to_speech(
+async def text_to_speech(
     text: str = Form(..., description="Text to speak"),
     language: str = Form("english", description="Language ('english' or 'marathi')"),
 ):
-    """Generate spoken MP3 audio for accessibility in English or Marathi."""
+    """Generate spoken MP3 audio for accessibility in English or Marathi offloaded to threadpool."""
     voice = get_voice_service()
-    success, audio_bytes, mime_type = voice.text_to_speech_bytes(text, language)
+    success, audio_bytes, mime_type = await run_in_threadpool(voice.text_to_speech_bytes, text, language)
     if not success:
         raise HTTPException(status_code=500, detail=mime_type)
-    return Response(content=audio_bytes, media_type=mime_type)
+    return Response(
+        content=audio_bytes,
+        media_type=mime_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
