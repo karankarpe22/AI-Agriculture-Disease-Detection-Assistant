@@ -60,3 +60,7 @@ models/mobilenetv3_head_smoke_best.pth
 work/
 *.log
 *.pid
+
+# Audio Cache
+outputs/audio_cache/
+*.mp3

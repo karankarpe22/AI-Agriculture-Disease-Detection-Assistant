@@ -552,8 +552,23 @@ async function playSpeech(text, btnElement, origLabel) {
 
 function fallbackBrowserSpeech(text) {
   if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = currentLanguage === "marathi" ? "mr-IN" : "en-US";
+    const isMarathi = currentLanguage === "marathi";
+    utter.lang = isMarathi ? "mr-IN" : "en-IN";
+    utter.rate = 0.95; // Calm, clear natural cadence
+    utter.pitch = 1.0;
+
+    // Pick highest-quality natural neural voice available on the client device
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length > 0) {
+      const targetPrefix = isMarathi ? "mr" : "en";
+      const matched = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(targetPrefix));
+      const natural = matched.find(v => /natural|neural|online|google|expressive/i.test(v.name))
+        || matched.find(v => v.lang.toLowerCase() === (isMarathi ? "mr-in" : "en-in"))
+        || matched[0];
+      if (natural) utter.voice = natural;
+    }
     window.speechSynthesis.speak(utter);
   }
 }

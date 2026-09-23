@@ -25,6 +25,7 @@ google-genai>=0.1.1
 
 # Voice & Accessibility
 gTTS>=2.5
+edge-tts>=7.0.0
 
 # Testing & Quality
 pytest>=8.0
