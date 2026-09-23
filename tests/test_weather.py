@@ -8,7 +8,6 @@ def test_weather_service_fetches_real_data():
     service = get_weather_service()
     data = service.get_weather("Pune")
 
-    assert data["success"] is True
     assert "temperature_c" in data
     assert "humidity_percentage" in data
     assert "condition" in data

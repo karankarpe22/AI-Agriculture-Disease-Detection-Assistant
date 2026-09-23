@@ -92,10 +92,10 @@ class HealthResponse(BaseModel):
 
 
 class AskRequest(BaseModel):
-    crop: str
-    disease: str
+    crop: str | None = None
+    disease: str | None = None
     confidence: float = Field(default=0.85, ge=0.0, le=1.0)
-    question: str | None = None
+    question: str = Field(..., description="Farmer question")
     location: str | None = "Pune"
     language: str = "english"
     is_low_confidence: bool = False
@@ -210,13 +210,27 @@ async def predict_crop_disease(
 
 @app.post("/ask")
 def ask_question(request: AskRequest):
-    """Retrieve agricultural evidence and generate Gemini guidance."""
+    """Retrieve agricultural evidence and generate Gemini guidance for follow-up or standalone queries."""
     weather_service = get_weather_service()
     weather_data = weather_service.get_weather(city=request.location)
 
+    # Determine crop and disease context (support standalone Q&A without image)
+    crop = request.crop
+    if not crop and request.question:
+        q_lower = request.question.lower()
+        if "tomato" in q_lower or "टोमॅटो" in q_lower:
+            crop = "Tomato"
+        elif "potato" in q_lower or "बटाटा" in q_lower:
+            crop = "Potato"
+        elif any(k in q_lower for k in ["pepper", "capsicum", "शिमला", "मिरची"]):
+            crop = "Bell pepper"
+
+    resolved_crop = crop or "General / Solanaceae"
+    resolved_disease = request.disease or "General Agronomic Inquiry"
+
     rag = get_rag_service()
     evidence = rag.retrieve(
-        crop=request.crop,
+        crop=crop if crop and crop != "General / Solanaceae" else None,
         disease=request.disease,
         question=request.question,
         top_k=3,
@@ -225,8 +239,8 @@ def ask_question(request: AskRequest):
 
     gemini = get_gemini_service()
     guidance = gemini.generate_guidance(
-        crop=request.crop,
-        disease=request.disease,
+        crop=resolved_crop,
+        disease=resolved_disease,
         confidence=request.confidence,
         weather=weather_data,
         retrieved_evidence=evidence,
@@ -235,10 +249,15 @@ def ask_question(request: AskRequest):
         is_low_confidence=request.is_low_confidence,
     )
 
+    direct_answer = guidance.get("direct_answer", "")
+
     return {
-        "crop": request.crop,
-        "disease": request.disease,
+        "success": True,
+        "crop": resolved_crop,
+        "disease": resolved_disease,
         "confidence": request.confidence,
+        "question": request.question,
+        "direct_answer": direct_answer,
         "weather": weather_data,
         "evidence": evidence,
         "sources": sources,
@@ -343,6 +362,7 @@ async def analyze_leaf(
         except Exception as e:
             print(f"Grad-CAM error: {e}")
 
+    direct_answer = guidance.get("direct_answer", "")
     return {
         "success": True,
         "quality": pred_result.get("quality"),
@@ -358,6 +378,8 @@ async def analyze_leaf(
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,
+        "direct_answer": direct_answer,
+        "farmer_question": question,
         "gradcam_base64": gradcam_base64,
     }
 

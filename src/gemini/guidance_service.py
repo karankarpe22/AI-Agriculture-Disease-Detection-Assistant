@@ -104,19 +104,35 @@ class GeminiGuidanceService:
 
         target_lang = "Marathi (मराठी)" if is_marathi else "English"
 
+        has_specific_question = bool(question and question.strip())
+
+        if has_specific_question:
+            qa_instruction = f"""CRITICAL Q&A INSTRUCTION:
+The farmer asked this SPECIFIC QUESTION: "{question.strip()}"
+You MUST provide a direct, comprehensive, empathetic, and highly actionable answer addressing this EXACT question in the "direct_answer" field.
+- If the farmer asks whether a specific spray/treatment (e.g. neem oil, chemical, fertilizer, bio-agent) is effective, answer directly whether it is recommended, why or why not, and how/when to use it based on ICAR evidence.
+- If the farmer asks about timing, dosage, watering, or pre-harvest waiting periods, provide specific practical figures.
+- Do NOT give a vague reply. Make the "direct_answer" the centerpiece of your advisory in {target_lang}."""
+        else:
+            qa_instruction = """No specific question was submitted. In the "direct_answer" field, provide a clear 2-3 sentence executive summary of the most urgent immediate next step the farmer must take today to protect their crop."""
+
+        is_general_inquiry = "general" in (crop or "").lower() or "general" in (disease or "").lower()
+
         prompt = f"""You are an expert AI Agriculture Assistant advising an Indian farmer.
 Your role is to provide safe, actionable, and grounded agricultural guidance.
 
 CRITICAL CONSTRAINTS:
-1. Do NOT claim you diagnosed the leaf image. The disease classification was performed separately by a MobileNetV3 computer vision model.
+1. {'Do NOT claim you diagnosed the leaf image. The disease classification was performed separately by a MobileNetV3 computer vision model.' if not is_general_inquiry else 'You are advising on a general crop management query without an image. Ground your advice in ICAR agronomic principles.'}
 2. Ground all biological, cultural, and chemical advice strictly in the provided Agricultural Evidence below. Do NOT invent unsupported pesticide dosages or dangerous chemical mixtures.
 3. Consider the provided Weather Context when discussing disease spread or spray timing.
 4. Response language MUST be {target_lang}.
 {'5. The disease prediction has LOW CONFIDENCE. Emphasize uncertainty and advise the farmer to consult their local Krishi Vigyan Kendra (KVK) or agriculture officer before spraying chemicals.' if is_low_confidence else '5. Always remind the farmer to confirm with local agricultural officers before large-scale chemical applications.'}
 
+{qa_instruction}
+
 INPUT DATA:
-- Classified Crop: {crop}
-- Classified Disease: {disease}
+- Classified Crop: {crop or 'General Solanaceae / Agriculture'}
+- Classified Disease / Topic: {disease or 'Agronomic Inquiry'}
 - Model Confidence: {confidence * 100:.1f}% ({'LOW CONFIDENCE' if is_low_confidence else 'NORMAL'})
 - Weather Context: {weather_summary}
 - Farmer's Question: {question or 'What should I do to treat and protect my crop?'}
@@ -126,6 +142,7 @@ RETRIEVED AGRICULTURAL EVIDENCE:
 
 Please return your response in JSON format with exactly these keys:
 {{
+  "direct_answer": "Direct, empathetic, and comprehensive answer to the farmer's specific question (or immediate executive recommendation if no question was asked).",
   "explanation": "A simple, clear explanation of what this condition is and why it occurred.",
   "weather_interpretation": "How current temperature and humidity impact this disease or spray timing.",
   "management_guidance": "Clear, bulleted step-by-step cultural, organic, and recommended chemical actions.",
@@ -169,10 +186,28 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
             parsed = json.loads(clean_text)
             parsed["language"] = "marathi" if is_marathi else "english"
             parsed["powered_by"] = f"Google Gemini ({self.model_name})"
+
+            # Ensure direct_answer exists in parsed result
+            if "direct_answer" not in parsed or not parsed["direct_answer"]:
+                if question:
+                    parsed["direct_answer"] = (
+                        f"तुमच्या प्रश्नासाठी ({question}): कृपया खालील उपाययोजना आणि मार्गदर्शनाचा अवलंब करा."
+                        if is_marathi
+                        else f"In response to your query ('{question}'): Please follow the ICAR-recommended management practices detailed below."
+                    )
+                else:
+                    parsed["direct_answer"] = (
+                        "पिकाचे रक्षण करण्यासाठी तात्काळ बाधित पाने गोळा करून नष्ट करा आणि शिफारशीनुसार फवारणी करा."
+                        if is_marathi
+                        else f"Immediate recommended action for {crop}: Remove affected foliage and apply recommended protective spray."
+                    )
+
             return parsed
         except Exception:
-            # If JSON parsing failed, package raw text into explanation
+            # If JSON parsing failed, package raw text into direct_answer & explanation
+            fallback_answer = clean_text[:400]
             return {
+                "direct_answer": fallback_answer,
                 "explanation": clean_text,
                 "weather_interpretation": weather.get("risk_analysis", ""),
                 "management_guidance": "Please refer to the evidence sources cited below.",
@@ -209,6 +244,85 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
                 symptoms_points.extend(lines[:2])
 
         weather_note = weather.get("risk_analysis", "Current weather conditions are within normal seasonal range.")
+
+        # Synthesize direct answer to farmer's question from evidence
+        if question and question.strip():
+            q_clean = question.strip()
+            q_lower = q_clean.lower()
+            is_neem = "neem" in q_lower or "कडुनिंब" in q_lower or "organic" in q_lower or "सेंद्रिय" in q_lower
+            is_spray = "spray" in q_lower or "फवारणी" in q_lower or "medicine" in q_lower or "औषध" in q_lower
+            is_water = "water" in q_lower or "पाणी" in q_lower or "irrigation" in q_lower
+            is_harvest = "harvest" in q_lower or "काढणी" in q_lower or "fruit" in q_lower or "फळ" in q_lower
+
+            if is_marathi:
+                if is_neem:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): होय, सेंद्रिय नियंत्रणासाठी ५% निंबोळी अर्क (Neem seed kernel extract) "
+                        f"किंवा १०,००० ppm निंबोळी तेल २-३ मिली/लिटर पाण्यात मिसळून फवारणी करणे फायदेशीर ठरते. रोग जास्त असल्यास "
+                        f"ICAR शिफारशीनुसार प्रमाणित बुरशीनाशकाचा वापर करा."
+                    )
+                elif is_spray:
+                    best_spray = mgmt_points[0] if mgmt_points else "मॅन्कोझेब ७५% WP (२.५ ग्रॅम/लिटर) किंवा कॉपर ऑक्सिक्लोराईड (२.५ ग्रॅम/लिटर)"
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): आयसीएआर (ICAR) शिफारशीनुसार, {crop} वरील {disease} च्या नियंत्रणासाठी "
+                        f"मुख्य फवारणी: {best_spray}. फवारणी स्वच्छ सूर्यप्रकाश असताना किंवा सकाळी करावी."
+                    )
+                elif is_water:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): पाणी देताना झाडांच्या पानांवर पाणी साचणार नाही याची काळजी घ्या. "
+                        f"ठिबक सिंचनाचा वापर करा. हवेत आर्द्रता {weather.get('humidity_percentage', 60)}% असल्याने अतिपाणी देणे टाळा."
+                    )
+                elif is_harvest:
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): फवारणीनंतर रासायनिक औषधांचा प्रतीक्षा काळ (Pre-harvest interval) "
+                        f"किमान ७ ते १० दिवस पाळावा. तोपर्यंत फळांची तोडणी करू नये."
+                    )
+                else:
+                    ref_point = mgmt_points[0] if mgmt_points else "रोगट पाने त्वरित काढून टाका व तज्ज्ञांच्या सल्ल्याने फवारणी करा."
+                    direct_ans = (
+                        f"तुमच्या प्रश्नासाठी ('{q_clean}'): {crop} {disease} बाबत आयसीएआर शिफारस अशी आहे: {ref_point} "
+                        f"अधिक माहितीसाठी स्थानिक कृषी विज्ञान केंद्राशी संपर्क साधा."
+                    )
+            else:
+                if is_neem:
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): Yes, 5% Neem Seed Kernel Extract (NSKE) or neem oil "
+                        f"(10,000 ppm @ 2-3 ml/L) is effective as an eco-friendly preventive spray for {crop} against early disease progression. "
+                        f"However, if foliar infection exceeds 10-15%, follow up with ICAR-recommended targeted fungicides."
+                    )
+                elif is_spray:
+                    best_spray = mgmt_points[0] if mgmt_points else "Mancozeb 75% WP @ 2.5 g/L or Copper Oxychloride @ 2.5 g/L"
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): For {crop} affected by {disease}, the ICAR-recommended primary spray is: "
+                        f"{best_spray}. Spray during clear weather in morning hours for optimal leaf absorption."
+                    )
+                elif is_water:
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): Avoid overhead sprinkler irrigation which splashes fungal spores onto healthy leaves. "
+                        f"Use drip irrigation and maintain soil moisture without waterlogging, especially with current humidity at {weather.get('humidity_percentage', 60)}%."
+                    )
+                elif is_harvest:
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): Always observe the mandatory pre-harvest interval (PHI) of 7-14 days after "
+                        f"applying any chemical fungicide before picking fruits for market consumption."
+                    )
+                else:
+                    ref_point = mgmt_points[0] if mgmt_points else "Prune infected lower foliage and maintain proper canopy aeration."
+                    direct_ans = (
+                        f"In response to your query ('{q_clean}'): Based on ICAR research for {crop} {disease}: {ref_point}. "
+                        f"Ensure treatments are applied uniformly across the crop canopy."
+                    )
+        else:
+            if is_marathi:
+                direct_ans = (
+                    f"तात्काळ उपाययोजना ({crop} {disease}): बाधित पाने गोळा करून शेताबाहेर नष्ट करा आणि "
+                    f"हवामानातील आर्द्रता लक्षात घेऊन शिफारशीत संरक्षक बुरशीनाशकाची फवारणी करा."
+                )
+            else:
+                direct_ans = (
+                    f"Immediate Priority Action for {crop} ({disease}): Remove and destroy infected lower foliage immediately, "
+                    f"and apply protective fungicide spray considering prevailing weather conditions."
+                )
 
         if is_marathi:
             explanation = (
@@ -278,6 +392,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
             advisory = "Consult your local Krishi Vigyan Kendra (KVK) or agricultural extension officer before chemical treatments."
 
         return {
+            "direct_answer": direct_ans,
             "explanation": explanation,
             "weather_interpretation": weather_interp,
             "management_guidance": management,

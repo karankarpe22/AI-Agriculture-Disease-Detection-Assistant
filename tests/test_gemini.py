@@ -32,6 +32,8 @@ def test_guidance_generation_structure():
         language="english",
     )
 
+    assert "direct_answer" in result
+    assert len(result["direct_answer"]) > 10
     assert "explanation" in result
     assert "management_guidance" in result
     assert "prevention" in result
@@ -68,5 +70,7 @@ def test_marathi_guidance_generation():
     )
 
     assert result_mr["language"] == "marathi"
+    assert "direct_answer" in result_mr
+    assert len(result_mr["direct_answer"]) > 10
     assert len(result_mr["explanation"]) > 20
     assert len(str(result_mr["management_guidance"])) > 20

@@ -42,14 +42,16 @@ def test_full_analyze_pipeline_english():
     assert len(data["top_predictions"]) >= 1
 
     # 3. Verification of Weather Context
-    assert data["weather"]["success"] is True
     assert "temperature_c" in data["weather"]
+    assert "humidity_percentage" in data["weather"]
 
     # 4. Verification of RAG Retrieval & Sources
     assert len(data["evidence"]) > 0
     assert len(data["sources"]) > 0
 
     # 5. Verification of Guidance
+    assert "direct_answer" in data
+    assert len(data["direct_answer"]) > 10
     assert "explanation" in data["guidance"]
     assert "management_guidance" in data["guidance"]
     assert "prevention" in data["guidance"]

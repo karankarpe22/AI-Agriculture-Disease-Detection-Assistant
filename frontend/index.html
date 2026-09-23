@@ -1,28 +1,28 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agriculture Assistant (कृषी सहाय्यक) — Crop Health & Agronomist Advisory</title>
   <meta name="description"
-    content="AI Agriculture Assistant - Multilingual Crop Disease Detection and Evidence-Grounded Farmer Guidance using MobileNetV3, RAG, and Gemini">
-  <title>AI Agriculture Assistant | कृषी सहाय्यक</title>
+    content="Bilingual AI crop disease detection and ICAR-grounded agronomist advisory with live weather integration.">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+  <link rel="stylesheet" href="styles.css?v=3.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
-  <link rel="stylesheet" href="styles.css?v=2.6">
 </head>
 
 <body>
-  <!-- Header -->
+  <!-- Header Bar -->
   <header class="app-header">
     <div class="header-container">
       <div class="brand">
-        <div class="brand-icon">🌱</div>
+        <span class="brand-icon">🌱</span>
         <div>
           <h1 id="app-title">AI Agriculture Assistant</h1>
           <p class="brand-subtitle" id="app-subtitle">Evidence-Grounded Crop Disease Detection & Advisory</p>
@@ -49,81 +49,174 @@
 
       <!-- Left Column: Input Card -->
       <section class="card input-card" aria-labelledby="input-heading">
-        <h2 id="input-heading" class="card-title">
-          <span class="icon">📷</span>
-          <span id="txt-leaf-input">Crop Leaf Diagnosis</span>
-        </h2>
 
-        <!-- Upload Dropzone -->
-        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload leaf image">
-          <input type="file" id="leaf-image-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
-          <div class="dropzone-content" id="dropzone-prompt">
-            <div class="upload-icon">🍃</div>
-            <p class="dropzone-text" id="txt-dropzone-prompt">Drag and drop a leaf image, or <span
-                class="browse-link">browse</span></p>
-            <span class="dropzone-hint" id="txt-dropzone-hint">Supports clear photos of Tomato, Potato, Bell Pepper
-              (JPG/PNG, max 10MB)</span>
-          </div>
-          <div class="preview-container" id="preview-container" style="display: none;">
-            <img id="image-preview" alt="Leaf preview" class="leaf-preview-img">
-            <button type="button" class="btn-remove-image" id="btn-remove-image" title="Change photo">✕</button>
-          </div>
+        <!-- Mode Switcher Tabs -->
+        <div class="mode-tabs" role="tablist">
+          <button type="button" class="mode-tab active" id="tab-mode-diagnose" role="tab" aria-selected="true">
+            <span class="tab-icon">🌿</span>
+            <span id="txt-tab-diagnose">Leaf Diagnosis</span>
+          </button>
+          <button type="button" class="mode-tab" id="tab-mode-ask" role="tab" aria-selected="false">
+            <span class="tab-icon">💬</span>
+            <span id="txt-tab-ask">Ask Agronomist</span>
+          </button>
         </div>
 
-        <!-- Location Field -->
-        <div class="form-group">
-          <label for="location-input" class="form-label" id="lbl-location">
-            <span>📍 Farmer Location / City</span>
-            <span class="label-sub">(For microclimate disease risk)</span>
-          </label>
-          <div class="input-with-chips">
-            <input type="text" id="location-input" class="text-input" value="Pune"
-              placeholder="e.g., Pune, Nashik, Nagpur">
-            <div class="quick-chips">
-              <button type="button" class="chip" data-val="Pune">Pune</button>
-              <button type="button" class="chip" data-val="Nashik">Nashik</button>
-              <button type="button" class="chip" data-val="Nagpur">Nagpur</button>
-              <button type="button" class="chip" data-val="Kolhapur">Kolhapur</button>
+        <!-- PANEL 1: Leaf Diagnosis Mode (Image + Optional Question) -->
+        <div id="panel-diagnose" class="mode-panel">
+          <h2 id="input-heading" class="card-title">
+            <span class="icon">🌿</span>
+            <span id="txt-leaf-input">Crop Leaf Diagnosis</span>
+          </h2>
+
+          <!-- Upload Dropzone -->
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload leaf image">
+            <input type="file" id="leaf-image-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+            <div class="dropzone-content" id="dropzone-prompt">
+              <span class="dropzone-icon">📷</span>
+              <p class="dropzone-text" id="txt-dropzone-prompt">Drag & drop a leaf photo, or <span
+                  class="browse-link">browse</span></p>
+              <span class="dropzone-hint" id="txt-dropzone-hint">Supports clear photos of Tomato, Potato, Bell Pepper
+                (JPG/PNG, max 10MB)</span>
+            </div>
+
+            <!-- Preview Container -->
+            <div class="preview-container" id="preview-container" style="display: none;">
+              <img id="image-preview" alt="Leaf photo preview">
+              <button type="button" class="btn-remove" id="btn-remove-image" title="Remove image">&times;</button>
             </div>
           </div>
-        </div>
 
-        <!-- Farmer Question Field -->
-        <div class="form-group">
-          <label for="question-input" class="form-label" id="lbl-question">
-            <span>❓ Farmer Question</span>
-            <span class="label-sub">(Optional specific question)</span>
-          </label>
-          <div class="textarea-wrapper">
-            <textarea id="question-input" class="text-area" rows="3"
-              placeholder="e.g. What organic or chemical spray should I use? How do I stop this from spreading?"></textarea>
-            <button type="button" class="mic-btn" id="mic-btn" title="Speak question in English or Marathi">
-              <span class="mic-icon">🎙️</span>
-            </button>
+          <!-- Quick Samples Selector -->
+          <div class="form-group samples-group">
+            <label class="form-label" id="lbl-samples">🧪 Test with Sample Leaf:</label>
+            <div class="sample-pills">
+              <button type="button" class="sample-pill" data-src="/data/samples/sample_tomato_early_blight.jpg"
+                data-name="Tomato Early Blight">🍅 Early Blight</button>
+              <button type="button" class="sample-pill" data-src="/data/samples/sample_potato_late_blight.jpg"
+                data-name="Potato Late Blight">🥔 Late Blight</button>
+              <button type="button" class="sample-pill" data-src="/data/samples/sample_bell_pepper_bacterial_spot.jpg"
+                data-name="Bell Pepper Bacterial Spot">🫑 Bacterial Spot</button>
+            </div>
           </div>
-          <div class="quick-chips question-chips">
-            <button type="button" class="chip q-chip" data-q="What spray should I use to treat this disease?">Spray
-              guidance?</button>
-            <button type="button" class="chip q-chip"
-              data-q="How can I prevent this in my other plants?">Prevention?</button>
-            <button type="button" class="chip q-chip" data-q="Is this disease dangerous for fruit harvest?">Harvest
-              risk?</button>
+
+          <!-- Location Input -->
+          <div class="form-group">
+            <label for="location-input" class="form-label" id="lbl-location">
+              <span>📍 Farmer Location / City</span>
+            </label>
+            <div class="input-with-chips">
+              <input type="text" id="location-input" class="text-input" placeholder="e.g. Pune, Nashik, Kolhapur"
+                value="Pune">
+              <div class="quick-chips">
+                <button type="button" class="chip" data-val="Pune">Pune</button>
+                <button type="button" class="chip" data-val="Nashik">Nashik</button>
+                <button type="button" class="chip" data-val="Nagpur">Nagpur</button>
+                <button type="button" class="chip" data-val="Solapur">Solapur</button>
+              </div>
+            </div>
           </div>
+
+          <!-- Farmer Question with Voice Input -->
+          <div class="form-group">
+            <label for="question-input" class="form-label" id="lbl-question">
+              <span>❓ Farmer Question</span>
+              <span class="form-label-sub" id="lbl-question-sub">(Optional specific question)</span>
+            </label>
+            <div class="textarea-wrapper">
+              <textarea id="question-input" class="text-area" rows="3"
+                placeholder="e.g. Can I use neem oil spray? How do I stop this from spreading?"></textarea>
+              <button type="button" class="mic-btn" id="mic-btn" title="Speak question in English or Marathi">
+                <span class="mic-icon">🎙️</span>
+              </button>
+            </div>
+            <div class="quick-chips question-chips">
+              <button type="button" class="chip q-chip" data-q="What spray should I use to treat this disease?">Spray
+                guidance?</button>
+              <button type="button" class="chip q-chip"
+                data-q="How can I prevent this in my other plants?">Prevention?</button>
+              <button type="button" class="chip q-chip" data-q="Is this disease dangerous for fruit harvest?">Harvest
+                risk?</button>
+            </div>
+          </div>
+
+          <!-- Grad-CAM Toggle -->
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gradcam-toggle">
+              <span id="txt-gradcam-opt">Generate Grad-CAM Visual Attention Heatmap</span>
+            </label>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="button" class="btn-primary" id="analyze-btn" disabled>
+            <span class="btn-spinner" id="analyze-spinner" style="display: none;"></span>
+            <span class="btn-text" id="btn-analyze-text">Analyze Crop Health</span>
+          </button>
         </div>
 
-        <!-- Grad-CAM Toggle -->
-        <div class="checkbox-row">
-          <label class="checkbox-label">
-            <input type="checkbox" id="gradcam-toggle">
-            <span id="txt-gradcam-opt">Generate Grad-CAM Visual Attention Heatmap</span>
-          </label>
+        <!-- PANEL 2: Standalone Agronomist Q&A Mode (No Image Required) -->
+        <div id="panel-ask" class="mode-panel" style="display: none;">
+          <h2 class="card-title">
+            <span class="icon">💬</span>
+            <span id="txt-standalone-title">Ask Agricultural Expert</span>
+          </h2>
+          <p class="panel-subtitle" id="txt-standalone-desc">Ask any question on crop health, spray schedules,
+            fertilizers, or pest management without needing a photo.</p>
+
+          <!-- Crop Context Selector -->
+          <div class="form-group">
+            <label class="form-label" id="lbl-crop-context">🌱 Crop Category:</label>
+            <div class="crop-context-chips" id="crop-context-chips">
+              <button type="button" class="chip crop-chip active" data-crop="">All / General</button>
+              <button type="button" class="chip crop-chip" data-crop="Tomato">🍅 Tomato</button>
+              <button type="button" class="chip crop-chip" data-crop="Potato">🥔 Potato</button>
+              <button type="button" class="chip crop-chip" data-crop="Bell pepper">🫑 Bell Pepper</button>
+            </div>
+          </div>
+
+          <!-- Location Input for Standalone Q&A -->
+          <div class="form-group">
+            <label for="standalone-location-input" class="form-label" id="lbl-standalone-loc">
+              <span>📍 Location (for weather-tailored advice)</span>
+            </label>
+            <input type="text" id="standalone-location-input" class="text-input"
+              placeholder="e.g. Pune, Nashik, Kolhapur" value="Pune">
+          </div>
+
+          <!-- Standalone Question Input -->
+          <div class="form-group">
+            <label for="standalone-question-input" class="form-label" id="lbl-standalone-question">
+              <span>❓ Your Farming Question</span>
+            </label>
+            <div class="textarea-wrapper">
+              <textarea id="standalone-question-input" class="text-area" rows="4"
+                placeholder="e.g. Which fertilizer schedule is best before flowering? How to prevent potato blight in humid weather?"></textarea>
+              <button type="button" class="mic-btn" id="standalone-mic-btn"
+                title="Speak question in English or Marathi">
+                <span class="mic-icon">🎙️</span>
+              </button>
+            </div>
+            <div class="quick-chips standalone-q-chips">
+              <button type="button" class="chip sq-chip"
+                data-q="What is the best fertilizer schedule for tomato before flowering?">Tomato fertilizer?</button>
+              <button type="button" class="chip sq-chip"
+                data-q="How to prevent potato blight during humid and overcast weather?">Potato blight
+                prevention?</button>
+              <button type="button" class="chip sq-chip"
+                data-q="Can I use organic neem oil for controlling aphids and thrips?">Organic neem spray?</button>
+              <button type="button" class="chip sq-chip"
+                data-q="What are the symptoms and cure of bacterial spot in capsicum?">Capsicum bacterial spot?</button>
+            </div>
+          </div>
+
+          <!-- Submit Button for Standalone Q&A -->
+          <button type="button" class="btn-primary" id="standalone-ask-btn">
+            <span class="btn-spinner" id="standalone-spinner" style="display: none;"></span>
+            <span class="btn-text" id="btn-standalone-text">Ask Agronomist</span>
+          </button>
         </div>
 
-        <!-- Submit Button -->
-        <button type="button" class="btn-primary" id="analyze-btn" disabled>
-          <span class="btn-spinner" id="analyze-spinner" style="display: none;"></span>
-          <span class="btn-text" id="btn-analyze-text">Analyze Crop Health</span>
-        </button>
       </section>
 
       <!-- Right Column: Results Section -->
@@ -136,13 +229,29 @@
         <!-- Empty State Prompt -->
         <div class="empty-state" id="empty-state">
           <div class="empty-icon">🌿</div>
-          <h3 id="txt-empty-title">No Leaf Analyzed Yet</h3>
-          <p id="txt-empty-desc">Upload a crop leaf image and click "Analyze Crop Health" to diagnose disease, check
-            local weather risk, and retrieve ICAR-grounded treatment advice.</p>
+          <h3 id="txt-empty-title">Ready for Your Query</h3>
+          <p id="txt-empty-desc">Upload a crop leaf image for disease diagnosis, or switch to "Ask Agronomist" to ask
+            direct agricultural questions with live weather guidance.</p>
         </div>
 
         <!-- Active Results Content (hidden until analyzed) -->
         <div class="results-content" id="results-content" style="display: none;">
+
+          <!-- Direct Q&A Answer Card (Prominently displayed whenever a question is answered) -->
+          <div class="qa-answer-card" id="qa-answer-box" style="display: none;">
+            <div class="qa-card-header">
+              <div class="qa-header-title">
+                <span class="qa-badge-icon">💡</span>
+                <h4 id="txt-qa-answer-title">Answer to Your Question</h4>
+              </div>
+              <button type="button" class="btn-mini-audio" id="qa-audio-btn" title="Listen to Answer">
+                <span class="mini-audio-icon">🔊</span>
+                <span id="txt-qa-audio">Listen</span>
+              </button>
+            </div>
+            <blockquote class="farmer-question-quote" id="qa-question-display"></blockquote>
+            <div class="direct-answer-content" id="qa-direct-answer"></div>
+          </div>
 
           <!-- Quality Alert if any -->
           <div class="alert-box alert-quality" id="quality-alert" style="display: none;">
@@ -157,14 +266,14 @@
                 <span class="crop-tag" id="res-crop">Tomato</span>
                 <h3 class="disease-name" id="res-disease">Early Blight</h3>
               </div>
-              <div class="confidence-box">
+              <div class="confidence-box" id="res-confidence-box">
                 <div class="conf-percentage" id="res-confidence">91.4%</div>
                 <div class="conf-label" id="txt-conf-label">Confidence</div>
               </div>
             </div>
 
             <!-- Confidence Bar -->
-            <div class="conf-bar-track">
+            <div class="conf-bar-track" id="conf-bar-track">
               <div class="conf-bar-fill" id="conf-bar-fill" style="width: 91%;"></div>
             </div>
 
@@ -194,18 +303,18 @@
             <p class="weather-risk-text" id="weather-risk-text">High humidity favors foliar fungal spore dispersal.</p>
           </div>
 
-          <!-- Audio Read Aloud Player -->
-          <div class="audio-banner">
+          <!-- Audio Read Aloud Player for Full Advisory -->
+          <div class="audio-banner" id="audio-banner">
             <button type="button" class="btn-audio" id="tts-btn">
               <span class="audio-icon">🔊</span>
-              <span id="txt-listen-guidance">Listen to Advisory</span>
+              <span id="txt-listen-guidance">Listen to Full Advisory</span>
             </button>
             <audio id="guidance-audio" controls style="display: none;"></audio>
           </div>
 
           <!-- Structured Guidance Accordion / Sections -->
           <div class="guidance-sections" id="guidance-sections">
-            <div class="guidance-block">
+            <div class="guidance-block" id="block-explanation">
               <h4 class="block-title"><span class="icon">📖</span> <span id="txt-explanation-title">Explanation</span>
               </h4>
               <p class="block-content" id="guidance-explanation"></p>
@@ -254,6 +363,42 @@
             <ul class="sources-list" id="sources-list"></ul>
           </div>
 
+          <!-- Follow-Up Q&A Section (Always available after diagnosis or query) -->
+          <div class="followup-card" id="followup-card">
+            <div class="followup-header">
+              <span class="followup-icon">💬</span>
+              <div>
+                <h4 id="txt-followup-title">Ask a Follow-Up Question</h4>
+                <p class="followup-subtitle" id="txt-followup-sub">Ask specific doubts about treatment timing, organic
+                  options, or spray safety without re-uploading.</p>
+              </div>
+            </div>
+
+            <div class="quick-chips followup-chips">
+              <button type="button" class="chip follow-chip" data-q="Can I use organic neem oil for this?">Organic Neem
+                Oil?</button>
+              <button type="button" class="chip follow-chip"
+                data-q="What is the waiting period before harvesting fruits?">Pre-harvest interval?</button>
+              <button type="button" class="chip follow-chip" data-q="When is the best time of day to spray?">Best spray
+                timing?</button>
+              <button type="button" class="chip follow-chip" data-q="How often should I repeat this spray?">Spray
+                frequency?</button>
+            </div>
+
+            <div class="followup-input-row">
+              <input type="text" id="followup-input" class="text-input followup-field"
+                placeholder="Type your follow-up question here...">
+              <button type="button" class="mic-btn" id="followup-mic-btn" title="Speak follow-up question">🎙️</button>
+              <button type="button" class="btn-secondary" id="followup-send-btn">
+                <span class="btn-spinner" id="followup-spinner" style="display: none;"></span>
+                <span id="txt-btn-followup">Ask</span>
+              </button>
+            </div>
+
+            <!-- Follow-up conversation history thread -->
+            <div class="followup-thread" id="followup-thread"></div>
+          </div>
+
         </div>
       </section>
 
@@ -266,7 +411,7 @@
       Gemini Guidance</p>
   </footer>
 
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 
 </html>
