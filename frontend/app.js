@@ -37,7 +37,6 @@ const I18N = {
     emptyTitle: "Ready for Your Query",
     emptyDesc: "Upload a crop leaf image for disease diagnosis, or switch to 'Ask Agronomist' to ask direct agricultural questions with live weather guidance.",
     confLabel: "Confidence",
-    altProbabilities: "Alternative Model Probabilities",
     listenAdvisory: "Listen to Full Advisory",
     playingAudio: "Playing Audio...",
 
@@ -94,7 +93,6 @@ const I18N = {
     emptyTitle: "तुमच्या प्रश्नासाठी सज्ज",
     emptyDesc: "रोग निदानासाठी पानाचा फोटो अपलोड करा, किंवा फोटोशिवाय थेट शेतीविषयक प्रश्न विचारण्यासाठी 'कृषी तज्ज्ञांना विचारा' निवडा.",
     confLabel: "विश्वासार्हता",
-    altProbabilities: "इतर संभाव्य रोग शक्यता",
     listenAdvisory: "संपूर्ण सल्ला ऐका",
     playingAudio: "ऑडिओ वाजत आहे...",
 
@@ -190,7 +188,6 @@ const confBarTrack = document.getElementById("conf-bar-track");
 const confBarFill = document.getElementById("conf-bar-fill");
 const uncertaintyBox = document.getElementById("uncertainty-box");
 const uncertaintyText = document.getElementById("uncertainty-text");
-const topPredsList = document.getElementById("top-preds-list");
 
 // Weather
 const weatherBox = document.getElementById("weather-box");
@@ -333,7 +330,6 @@ function setLanguage(lang) {
   document.getElementById("txt-empty-title").textContent = t.emptyTitle;
   document.getElementById("txt-empty-desc").textContent = t.emptyDesc;
   document.getElementById("txt-conf-label").textContent = t.confLabel;
-  document.getElementById("txt-other-possibilities").textContent = t.altProbabilities;
   document.getElementById("txt-listen-guidance").textContent = t.listenAdvisory;
 
   document.getElementById("txt-qa-answer-title").textContent = t.qaAnswerTitle;
@@ -825,11 +821,9 @@ function renderResults(data, options = {}) {
     resConfidenceBox.style.display = "none";
     confBarTrack.style.display = "none";
     uncertaintyBox.style.display = "none";
-    document.getElementById("top-predictions-details").style.display = "none";
   } else {
     resConfidenceBox.style.display = "flex";
     confBarTrack.style.display = "block";
-    document.getElementById("top-predictions-details").style.display = "block";
 
     resCrop.textContent = data.crop || "Crop";
     resDisease.textContent = data.disease || "Healthy";
@@ -855,15 +849,6 @@ function renderResults(data, options = {}) {
       uncertaintyBox.style.display = "none";
     }
 
-    // Top Predictions
-    topPredsList.innerHTML = "";
-    if (data.top_predictions && data.top_predictions.length > 0) {
-      data.top_predictions.forEach((p) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<span>${p.crop} - ${p.disease}</span> <strong>${(p.confidence * 100).toFixed(1)}%</strong>`;
-        topPredsList.appendChild(li);
-      });
-    }
   }
 
   // 3. Weather Context
