@@ -249,6 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFollowUpQA();
   setupSampleSelectors();
   checkSystemHealth();
+  setupBadgeClick();
 });
 
 // System Health Check with automatic Render cold-start retry
@@ -280,6 +281,54 @@ async function checkSystemHealth(retries = 5) {
 }
 
 // Mode Switching (Leaf Diagnosis vs Standalone Q&A)
+
+// Helper to configure or update the Backend URL
+function promptSetBackendUrl() {
+  const currentUrl = localStorage.getItem("AGRI_BACKEND_URL") || DEFAULT_RENDER_BACKEND;
+  const newUrl = prompt(
+    "🔗 Configure AI Backend URL:\n\n" +
+    "Enter your deployed Render backend URL (e.g. https://your-app.onrender.com):",
+    currentUrl
+  );
+  if (newUrl && newUrl.trim()) {
+    const cleanUrl = newUrl.trim().replace(/\/+$/, "");
+    localStorage.setItem("AGRI_BACKEND_URL", cleanUrl);
+    window.location.reload();
+  }
+}
+
+function handleBackendConnectionError(error, contextName = "Operation") {
+  console.error(`${contextName} error:`, error);
+  const currentUrl = localStorage.getItem("AGRI_BACKEND_URL") || DEFAULT_RENDER_BACKEND;
+  const isFetchError = error.message && error.message.toLowerCase().includes("fetch");
+  
+  if (isFetchError) {
+    const userChoice = confirm(
+      `⚠️ Cannot connect to AI Backend (${contextName})!\n\n` +
+      `Current Backend URL: ${currentUrl}\n\n` +
+      `Possible reasons:\n` +
+      `1. Render free tier is waking up (takes ~30-50 seconds).\n` +
+      `2. Your Render URL is different.\n\n` +
+      `Click OK to change your Render Backend URL, or Cancel to retry.`
+    );
+    if (userChoice) {
+      promptSetBackendUrl();
+    }
+  } else {
+    alert(`${contextName} Error: ${error.message}`);
+  }
+}
+
+
+function setupBadgeClick() {
+  const badge = document.getElementById("system-badge");
+  if (badge) {
+    badge.style.cursor = "pointer";
+    badge.title = "Click to configure or change AI Backend URL";
+    badge.addEventListener("click", promptSetBackendUrl);
+  }
+}
+
 function setupModeTabs() {
   tabModeDiagnose.addEventListener("click", () => switchMode("diagnose"));
   tabModeAsk.addEventListener("click", () => switchMode("ask"));
@@ -646,7 +695,7 @@ function setupFormSubmission() {
 
       renderResults(data, { isStandalone: false, initialQuestion: farmerQ });
     } catch (error) {
-      alert(`Analysis Error: ${error.message}`);
+      handleBackendConnectionError(error, "Analysis");
     } finally {
       analyzeBtn.disabled = false;
       analyzeSpinner.style.display = "none";
