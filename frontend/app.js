@@ -3,7 +3,20 @@
  * Frontend Application Controller with Full Multilingual, Standalone & Follow-Up Q&A Capabilities
  */
 
-const API_BASE = "";
+// Backend API URL Configuration
+// 1. Localhost / 127.0.0.1 -> relative path "" (connects directly to local FastAPI server)
+// 2. Vercel / Remote Domain -> connects to your Render backend service
+// You can also override dynamically by adding ?backend=https://your-app.onrender.com to your Vercel URL
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has("backend")) {
+  const backendParam = urlParams.get("backend").replace(/\/+$/, "");
+  localStorage.setItem("AGRI_BACKEND_URL", backendParam);
+}
+
+const DEFAULT_RENDER_BACKEND = "https://ai-agriculture-disease-detection-assistant.onrender.com";
+const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ? ""
+  : (localStorage.getItem("AGRI_BACKEND_URL") || window.AGRI_BACKEND_URL || DEFAULT_RENDER_BACKEND);
 
 // Internationalization Dictionary (English & Marathi)
 const I18N = {
@@ -238,16 +251,31 @@ document.addEventListener("DOMContentLoaded", () => {
   checkSystemHealth();
 });
 
-// System Health Check
-async function checkSystemHealth() {
+// System Health Check with automatic Render cold-start retry
+async function checkSystemHealth(retries = 5) {
   try {
-    const res = await fetch(`${API_BASE}/health`);
+    systemBadge.textContent = "Connecting to AI Backend...";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 9000);
+    const res = await fetch(`${API_BASE}/health`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
     if (res.ok) {
       const data = await res.json();
       systemBadge.textContent = `${data.model} Ready (${data.num_classes} classes)`;
+      systemBadge.style.color = "var(--primary)";
+      return;
     }
+    throw new Error("Health check non-200");
   } catch (e) {
-    systemBadge.textContent = "Offline Mode";
+    if (retries > 0) {
+      systemBadge.textContent = `⚡ Waking up AI server (Render ~${retries * 8}s)...`;
+      systemBadge.style.color = "var(--accent-amber)";
+      setTimeout(() => checkSystemHealth(retries - 1), 6000);
+    } else {
+      systemBadge.textContent = "Offline Mode";
+      systemBadge.style.color = "var(--accent-red)";
+    }
   }
 }
 

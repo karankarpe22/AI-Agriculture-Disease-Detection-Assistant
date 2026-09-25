@@ -1,10 +1,4 @@
-"""Phase 11: High-Performance FastAPI backend service for AI Agriculture Assistant.
-
-Optimized with:
-- Lifespan Service Pre-Warming (eliminates cold-start latency for MobileNetV3 and FAISS)
-- Asynchronous Threadpool Execution via run_in_threadpool (prevents event loop blocking)
-- GZip Middleware compression for high-bandwidth payloads (Grad-CAM base64, RAG evidence)
-- Static Asset Caching with HTTP Cache-Control headers
+"""High-Performance FastAPI backend service for AI Agriculture Assistant.
 """
 from __future__ import annotations
 
