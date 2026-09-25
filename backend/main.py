@@ -83,12 +83,22 @@ app = FastAPI(
 # GZip Compression Middleware (compresses responses > 1000 bytes)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Enable CORS for local and remote web interactions
+# Enable CORS strictly for authorized frontend domains and local development
+ALLOWED_ORIGINS = [
+    "https://krishi-sahayyak.vercel.app",
+    "https://krishi-sahayyak.onrender.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

@@ -7,16 +7,22 @@
 // 1. Localhost / 127.0.0.1 -> relative path "" (connects directly to local FastAPI server)
 // 2. Vercel / Remote Domain -> connects to your Render backend service
 // You can also override dynamically by adding ?backend=https://your-app.onrender.com to your Vercel URL
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has("backend")) {
-  const backendParam = urlParams.get("backend").replace(/\/+$/, "");
-  localStorage.setItem("AGRI_BACKEND_URL", backendParam);
-}
+// Permanent, secured AI Backend URL on Render
+const PRODUCTION_BACKEND_URL = "https://krishi-sahayyak.onrender.com";
 
-const DEFAULT_RENDER_BACKEND = "https://ai-agriculture-disease-detection-assistant.onrender.com";
+// Automatic API Routing:
+// - Local development (localhost / 127.0.0.1) -> relative endpoint ""
+// - Production (Vercel) -> secured Render backend
 const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
   ? ""
-  : (localStorage.getItem("AGRI_BACKEND_URL") || window.AGRI_BACKEND_URL || DEFAULT_RENDER_BACKEND);
+  : PRODUCTION_BACKEND_URL;
+
+// Ensure any obsolete overrides in browser storage are removed
+try {
+  localStorage.removeItem("AGRI_BACKEND_URL");
+} catch (e) {
+  // Ignore restricted storage contexts
+}
 
 // Internationalization Dictionary (English & Marathi)
 const I18N = {
@@ -249,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFollowUpQA();
   setupSampleSelectors();
   checkSystemHealth();
-  setupBadgeClick();
+  setupBadge();
 });
 
 // System Health Check with automatic Render cold-start retry
@@ -282,50 +288,27 @@ async function checkSystemHealth(retries = 5) {
 
 // Mode Switching (Leaf Diagnosis vs Standalone Q&A)
 
-// Helper to configure or update the Backend URL
-function promptSetBackendUrl() {
-  const currentUrl = localStorage.getItem("AGRI_BACKEND_URL") || DEFAULT_RENDER_BACKEND;
-  const newUrl = prompt(
-    "🔗 Configure AI Backend URL:\n\n" +
-    "Enter your deployed Render backend URL (e.g. https://your-app.onrender.com):",
-    currentUrl
-  );
-  if (newUrl && newUrl.trim()) {
-    const cleanUrl = newUrl.trim().replace(/\/+$/, "");
-    localStorage.setItem("AGRI_BACKEND_URL", cleanUrl);
-    window.location.reload();
-  }
-}
-
+// Backend error handler: User-friendly notification without exposing system configurations
 function handleBackendConnectionError(error, contextName = "Operation") {
   console.error(`${contextName} error:`, error);
-  const currentUrl = localStorage.getItem("AGRI_BACKEND_URL") || DEFAULT_RENDER_BACKEND;
   const isFetchError = error.message && error.message.toLowerCase().includes("fetch");
   
   if (isFetchError) {
-    const userChoice = confirm(
-      `⚠️ Cannot connect to AI Backend (${contextName})!\n\n` +
-      `Current Backend URL: ${currentUrl}\n\n` +
-      `Possible reasons:\n` +
-      `1. Render free tier is waking up (takes ~30-50 seconds).\n` +
-      `2. Your Render URL is different.\n\n` +
-      `Click OK to change your Render Backend URL, or Cancel to retry.`
+    alert(
+      `⏳ AI Server Connecting...\n\n` +
+      `The cloud AI backend is waking up (Render free instances take ~30-50s to spin up).\n\n` +
+      `Please wait a moment and click Analyze / Ask again.`
     );
-    if (userChoice) {
-      promptSetBackendUrl();
-    }
   } else {
-    alert(`${contextName} Error: ${error.message}`);
+    alert(`${contextName} Notice: ${error.message || "An issue occurred while processing. Please retry."}`);
   }
 }
 
-
-function setupBadgeClick() {
+function setupBadge() {
   const badge = document.getElementById("system-badge");
   if (badge) {
-    badge.style.cursor = "pointer";
-    badge.title = "Click to configure or change AI Backend URL";
-    badge.addEventListener("click", promptSetBackendUrl);
+    badge.style.cursor = "default";
+    badge.title = "AI Agricultural Diagnostics Service";
   }
 }
 
@@ -748,7 +731,7 @@ function setupStandaloneQA() {
 
       renderResults(data, { isStandalone: true, initialQuestion: query });
     } catch (error) {
-      alert(`Q&A Advisory Error: ${error.message}`);
+      handleBackendConnectionError(error, "Agronomist Advisory");
     } finally {
       standaloneAskBtn.disabled = false;
       standaloneSpinner.style.display = "none";
