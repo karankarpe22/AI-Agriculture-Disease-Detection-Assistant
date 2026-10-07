@@ -1,0 +1,368 @@
+================================================================================
+AI AGRICULTURE ASSISTANT (कृषी सहाय्यक)
+COMPREHENSIVE PROJECT OVERVIEW, ARCHITECTURE, FLOW, AND LLM CONTINUATION GUIDE
+================================================================================
+
+[NOTE FOR NEXT LLM / AI AGENT]:
+This document contains the complete context, system architecture, data flow,
+directory structure, ML training details, and current deployment state of this
+project. Read this file to seamlessly continue development, answer viva/presentation
+questions, or extend features without needing past chat history.
+
+================================================================================
+1. PROJECT AT A GLANCE
+================================================================================
+- Project Title: AI Agriculture Assistant (कृषी सहाय्यक - Krishi Sahayyak)
+- Core Mission: Provide smallholder Indian farmers with evidence-grounded,
+  real-time crop disease diagnosis, microclimatic weather risk alerts, and
+  expert agronomic advisory in regional languages (Marathi & English).
+- Live Deployments:
+  * Frontend: https://krishi-sahayyak.vercel.app (Hosted on Vercel Global Edge CDN)
+  * Backend:  https://krishi-sahayyak.onrender.com (FastAPI on Render Cloud Linux)
+- Key Metrics:
+  * Supported Crops: Tomato, Potato, Bell Pepper (3 major horticultural crops)
+  * Disease Classes: 13 distinct classes (10 diseases + 3 healthy baselines)
+  * Total Dataset: 20,113 curated PlantVillage images (70% train / 15% val / 15% test)
+  * Test Accuracy: 81.89% (Macro Precision: 86.99%, Weighted F1: 81.39%)
+  * Inference Speed: ~21.58 ms per image on CPU
+  * Model Weight Size: 16.29 MB (MobileNetV3-Large, ideal for edge/mobile)
+  * RAG Index: 62 verified research chunks from ICAR-IIHR, CPRI, TNAU in FAISS
+  * LLM Guidance: Google Gemini 2.5 Flash via official google-genai SDK
+  * Audio Support: gTTS & browser Web Speech API for Marathi & English voice playback
+
+================================================================================
+2. 13 SUPPORTED CROPS & DISEASE CLASSES
+================================================================================
+1. Pepper__bell___Bacterial_spot (Xanthomonas campestris pv. vesicatoria)
+2. Pepper__bell___healthy (Normal healthy foliage)
+3. Potato___Early_blight (Alternaria solani)
+4. Potato___Late_blight (Phytophthora infestans - high microclimate rain risk)
+5. Tomato_Bacterial_spot (Xanthomonas perforans / euvesicatoria)
+6. Tomato_Early_blight (Alternaria solani)
+7. Tomato_Late_blight (Phytophthora infestans)
+8. Tomato_Leaf_Mold (Passalora fulva / Cladosporium fulvum)
+9. Tomato_Septoria_leaf_spot (Septoria lycopersici)
+10. Tomato_Spider_mites_Two_spotted_spider_mite (Tetranychus urticae)
+11. Tomato__Target_Spot (Corynespora cassiicola)
+12. Tomato__Tomato_YellowLeaf__Curl_Virus (TYLCV - transmitted by Whiteflies)
+13. Tomato_healthy (Normal healthy foliage)
+
+================================================================================
+3. COMPLETE SYSTEM ARCHITECTURE & END-TO-END DATA FLOW
+================================================================================
+The application follows a strictly grounded, multi-tier pipeline:
+
+[Farmer / User Browser]
+       │
+       ▼ (1) Upload Leaf Photo OR Ask Agricultural Question
+[Vercel Frontend (Vanilla JS + Glassmorphic UI)]
+       │
+       ▼ (2) HTTP POST Multipart / JSON (Locked CORS to Render)
+[FastAPI Backend Server (Render Linux Container)]
+       │
+       ├─► (3) Defensive Image Quality Check (PIL + NumPy)
+       │       - File size (<10MB), extension (.jpg, .png, .webp)
+       │       - Resolution bounds (100x100 to 6000x6000)
+       │       - Extreme darkness (<18) or wash-out/overexposure (>245)
+       │       - Contrast verification (std deviation >= 12)
+       │       - Blurriness detection (Laplacian variance < 15 triggers warning)
+       │       - Foliage green/brown HSV color check (rejects non-leaf uploads)
+       │
+       ├─► (4) Deep Learning Inference (MobileNetV3-Large in PyTorch)
+       │       - Preprocessing: Resize(256), CenterCrop(224), ImageNet Normalization
+       │       - Forward pass produces raw logits -> Softmax probabilities
+       │       - Identifies top class, confidence %, and top-3 alternate candidate classes
+       │       - Optional Grad-CAM Heatmap generation (target layer features[16])
+       │
+       ├─► (5) Real-Time Weather & Microclimate Risk Engine
+       │       - Geocodes user city (e.g., Pune, Nashik, Solapur)
+       │       - Primary: OpenWeatherMap API; Auto-fallback: Open-Meteo Live API
+       │       - Retrieves Temperature, Relative Humidity, Wind Speed, Precipitation
+       │       - Rule-based microclimate scoring:
+       │         * High humidity (>80%) + mild temp (15-22°C) -> Late Blight fungal surge
+       │         * High temp (>30°C) + dry conditions -> Spider Mite pest outbreak
+       │
+       ├─► (6) Evidence Retrieval via FAISS RAG Knowledge Base
+       │       - Semantic search using sentence-transformers/all-MiniLM-L6-v2 (384-dim)
+       │       - Vector store: FAISS (FlatIP / cosine similarity)
+       │       - Retrieves top-3 verified agronomic chunks from ICAR & TNAU
+       │         (Chemical fungicides, organic bio-agents, preventive crop hygiene)
+       │
+       ├─► (7) Generative AI Synthesis via Google Gemini 2.5 Flash
+       │       - System prompt strictly grounds advice on RAG evidence + weather risk
+       │       - Disclaims direct clinical diagnosis; instructs farmer on field checks
+       │       - Generates structured response in requested language (Marathi/English):
+       │         * Summary & Symptoms Explanation
+       │         * Immediate Treatment & Chemical/Organic Sprays
+       │         * Long-Term Field Prevention & Crop Rotation
+       │         * Safety Precautions & Withholding Periods
+       │         * Specific answer to farmer's customized question
+       │
+       ├─► (8) Audio & Text-to-Speech Engine
+       │       - Server: gTTS / edge-tts audio synthesis cached as MP3/Base64
+       │       - Client fallback: Web Speech API synthesis for zero latency
+       │
+       ▼ (9) JSON Response returned to browser
+[Vercel Frontend]
+       │
+       ▼ Renders diagnosis badge, confidence meter, Grad-CAM toggle, weather card,
+         structured bilingual guidance cards, audio player, and follow-up Q&A thread.
+
+================================================================================
+4. FRONTEND STRUCTURE & DESIGN
+================================================================================
+Directory: `frontend/`
+Key Files:
+- `index.html`:
+  * Semantic HTML5 structure with custom accessibility IDs.
+  * Google Fonts: Outfit (modern sans) + Noto Sans Devanagari (clean Marathi typography).
+  * Navigation header with Live System Status badge (online indicator).
+  * Mode Switcher Tabs:
+    1. 'Leaf Diagnosis' (Photo upload, question, location, Grad-CAM toggle).
+    2. 'Ask Agronomist' (Standalone text/voice Q&A without requiring photos).
+  * Test Leaf Quick Selectors: One-click buttons to load sample leaves (Tomato Early Blight,
+    Bell Pepper Bacterial Spot, Healthy Potato, etc.) for live demonstrations.
+  * Results Workspace: Diagnostic banner, confidence meter, Grad-CAM overlay comparison,
+    weather microclimate risk card, RAG agronomic cards, and interactive Follow-up Q&A thread.
+- `styles.css`:
+  * Rich dark-mode glassmorphism design with agricultural emerald/leaf palette.
+  * Curated tokens: CSS variables for smooth gradients, frosted backdrop blurs (backdrop-filter: blur(16px)),
+    glow states, and card micro-interactions.
+  * Fully responsive mobile layout (optimized for Indian farmers on smartphones).
+- `app.js`:
+  * Client controller managing state, API calls, speech recognition, and DOM updates.
+  * Locked Backend Routing:
+    const PRODUCTION_BACKEND_URL = "https://krishi-sahayyak.onrender.com";
+    const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "" : PRODUCTION_BACKEND_URL;
+  * Complete Marathi & English translation dictionary (I18N) for instant client-side toggling.
+  * Voice recording via Web Speech API (webkitSpeechRecognition) in mr-IN and en-IN.
+  * Audio speech playback for complete agronomic guidance.
+  * Sample leaf loader fetching lightweight CDN images from data/samples/.
+  * Follow-up Q&A state retention: Maintains currentCrop, currentDisease, currentWeather
+    so farmers can ask doubts about previous diagnoses without re-uploading photos.
+- `data/samples/`:
+  * Bundled sample leaf JPGs deployed to Vercel edge CDN for quick test evaluation.
+- `vercel.json`:
+  * Clean Vercel deployment configuration (cleanUrls: true).
+
+================================================================================
+5. BACKEND STRUCTURE & API SERVICES
+================================================================================
+Directory: `backend/` and `src/`
+Key Files:
+- `backend/main.py`:
+  * High-performance FastAPI application configured with lifespan warm-up.
+  * Lifespan pre-warms PyTorch weights, FAISS vector index, and Weather services on boot.
+  * GZipMiddleware compresses payloads >1000 bytes.
+  * Restrictive CORS:
+    allow_origins = ["https://krishi-sahayyak.vercel.app", "https://krishi-sahayyak.onrender.com", localhost]
+    allow_origin_regex = r"https://.*\.vercel\.app"
+  * Endpoints:
+    1. GET /health: System readiness, model device, number of classes (13), RAG readiness, Gemini status.
+    2. GET /weather?city={city}: Fetches real-time temperature, humidity, and microclimate risk score.
+    3. POST /predict: Evaluates leaf photo, runs quality check, returns class, confidence, top-3 candidates, Grad-CAM.
+    4. POST /ask: Agronomic RAG retrieval + Gemini advisory for standalone questions or follow-up doubts.
+    5. POST /analyze: Unified end-to-end endpoint combining Image Prediction + Weather + RAG + Gemini Advice in a single round-trip.
+    6. POST /tts: Generates streaming audio for Marathi/English advice text.
+- `src/preprocessing/quality_check.py`:
+  * assess_image_quality(): Performs defensive OpenCV/NumPy checks on sharpness, contrast, brightness, and foliage color.
+- `src/prediction/predict.py`:
+  * DiseasePredictor: Thread-safe singleton model wrapper.
+  * Implements predict_image() and generate_gradcam().
+- `src/training/model.py`:
+  * Architecture definition for MobileNetV3-Large.
+  * Custom classifier head: Dropout(0.3) -> Linear(960, 13).
+- `src/rag/vector_store.py`:
+  * AgronomicRAGService: Loads models/rag_index.faiss and models/rag_chunks.json.
+  * Uses SentenceTransformer("all-MiniLM-L6-v2") to embed user queries and retrieve top matching evidence.
+- `src/weather/weather_service.py`:
+  * WeatherService: Fetches current meteorological conditions and computes disease favorability scores.
+- `src/gemini/guidance_service.py`:
+  * GeminiGuidanceService: Official Google GenAI SDK integration (client.models.generate_content).
+  * Employs structured system instructions ensuring outputs are evidence-grounded, empathetic, and culturally tailored.
+- `src/utils/voice_service.py`:
+  * Synthesizes audio using gTTS and local edge-tts fallbacks.
+
+================================================================================
+6. MACHINE LEARNING MODEL & TRAINING DETAILS
+================================================================================
+- Backbone: MobileNetV3-Large (chosen over ResNet50/DenseNet for its tiny footprint: 16.3MB,
+  depthwise separable convolutions, hard-swish activations, and fast CPU inference on modest cloud servers).
+- Pretrained Base: ImageNet-1K (MobileNet_V3_Large_Weights.DEFAULT).
+- Two-Stage Transfer Learning Strategy:
+  * Stage 1 (Head Training): Backbone weights frozen (requires_grad = False).
+    Trained custom linear head for 3 epochs with AdamW (lr=1e-3). Reached ~74% validation accuracy.
+  * Stage 2 (Fine-Tuning): Unfroze the top high-level convolutional block (features[13:]).
+    Trained with a lower learning rate (1e-4) with Cosine Annealing learning rate schedule for 2 epochs.
+    Prevented catastrophic forgetting while tuning deep feature representations to agricultural leaf veins,
+    chlorosis halos, concentric rings, and necrotic spots.
+- Final Evaluation Results:
+  * Validation Accuracy: 83.54%
+  * Test Accuracy: 81.89%
+  * Macro Precision: 86.99%
+  * Weighted F1-Score: 81.39%
+  * Average Inference Latency: 21.58 ms per image
+
+================================================================================
+7. EVIDENCE-GROUNDED RAG KNOWLEDGE BASE
+================================================================================
+- Markdown Files: knowledge_base/*.md (13 detailed disease sheets).
+- Sourced from official Indian agricultural research institutions:
+  1. ICAR - Indian Institute of Horticultural Research (IIHR), Bengaluru
+  2. ICAR - Central Potato Research Institute (CPRI), Shimla
+  3. ICAR - Indian Institute of Vegetable Research (IIVR), Varanasi
+  4. Tamil Nadu Agricultural University (TNAU) Agritech Portal
+- Contains verified chemical active ingredients (e.g., Mancozeb 75% WP, Copper Oxychloride 50% WP,
+  Chlorothalonil, Imidacloprid), organic bio-fungicides (Trichoderma viride, Pseudomonas fluorescens,
+  Neem oil azadirachtin), recommended water spray dosages (e.g. 2g/L water), and mandatory safety waiting periods.
+- Chunks are vectorized into models/rag_index.faiss with cosine similarity retrieval.
+
+================================================================================
+8. SECURITY, SECRETS & TAMPER-PROOFING
+================================================================================
+- Zero Secret Leaks on Client:
+  * GEMINI_API_KEY and WEATHER_API_KEY are stored strictly as private environment variables
+    on the Render cloud backend.
+  * Browser network tab reveals only sanitized JSON outputs. Keys never enter frontend JS.
+- Tamper-Proof Routing:
+  * Removed arbitrary URL override prompts from frontend.
+  * localStorage overrides disabled and wiped on load.
+  * CORS restricted strictly to https://krishi-sahayyak.vercel.app and localhost.
+- Defensive API Constraints:
+  * Max file size limit: 10MB.
+  * Allowed MIME types: image/jpeg, image/png, image/webp.
+  * Non-image/blackout image upload rejection with clear explanation.
+
+================================================================================
+9. COMPLETE PROJECT FILE DIRECTORY TREE
+================================================================================
+AI Agriculture assistant final/
+├── .env.example                     # Template showing required API key variable names
+├── .gitignore                       # Ignores .env, .venv, large raw datasets, and temporary cache
+├── config.yaml                      # Central hyperparameter & pipeline configuration file
+├── requirements.txt                 # Python dependencies (torch, torchvision, fastapi, faiss-cpu, etc.)
+├── vercel.json                      # Vercel deployment configuration
+├── README.md                        # Project documentation and setup guide
+│
+├── backend/
+│   ├── __init__.py
+│   └── main.py                      # FastAPI server with lifespan warmup, CORS, and API endpoints
+│
+├── frontend/
+│   ├── index.html                   # Bilingual UI, sample leaf buttons, Grad-CAM toggle, Q&A thread
+│   ├── styles.css                   # Glassmorphic responsive dark theme with agricultural styling
+│   ├── app.js                       # Controller, I18N dictionary, API calls, TTS/STT, locked backend
+│   ├── vercel.json                  # Frontend-specific Vercel routing
+│   └── data/
+│       └── samples/                 # Lightweight sample leaf photos for demonstration
+│
+├── src/
+│   ├── data/
+│   │   ├── dataset_tools.py         # Integrity validation and image verification utilities
+│   │   ├── inspect_dataset.py       # Dataset audit script for class balance and corrupt files
+│   │   ├── prepare_dataset.py       # Deterministic 70/15/15 train/val/test split generator
+│   │   └── generate_statistics_report.py
+│   ├── preprocessing/
+│   │   ├── quality_check.py         # Defensive checks (blur, brightness, contrast, foliage hue)
+│   │   └── transforms.py            # PyTorch train/val augmentation and normalization transforms
+│   ├── training/
+│   │   ├── model.py                 # MobileNetV3-Large network architecture definition
+│   │   ├── train_head.py            # Stage 1: Classifier head training script
+│   │   └── train_finetune.py        # Stage 2: Backbone fine-tuning script
+│   ├── prediction/
+│   │   └── predict.py               # Singleton inference engine & Grad-CAM visualizer
+│   ├── rag/
+│   │   └── vector_store.py          # FAISS vector store & SentenceTransformer retrieval service
+│   ├── weather/
+│   │   └── weather_service.py       # OpenWeatherMap & Open-Meteo microclimate disease risk service
+│   ├── gemini/
+│   │   └── guidance_service.py      # Google Gemini 2.5 Flash grounded agronomic synthesis service
+│   ├── utils/
+│   │   └── voice_service.py         # gTTS text-to-speech audio synthesizer
+│   └── evaluation/
+│       └── evaluate.py              # Test set evaluation (Accuracy, F1, confusion matrix)
+│
+├── knowledge_base/                  # 13 ICAR/TNAU-verified disease sheets (Markdown format)
+│   ├── tomato_early_blight.md
+│   ├── tomato_late_blight.md
+│   ├── potato_early_blight.md
+│   ├── potato_late_blight.md
+│   └── ...
+│
+├── models/
+│   ├── class_names.json             # Alphabetical mapping of the 13 supported classes
+│   ├── mobilenetv3_best.pth         # Final production PyTorch model weights (16.29 MB)
+│   ├── rag_chunks.json              # 62 segmented agricultural knowledge chunks
+│   └── rag_index.faiss              # FAISS FlatIP index for fast vector similarity search
+│
+├── outputs/                         # Evaluation artifacts, reports, and confusion matrix plots
+│   ├── project_results.json         # Complete JSON summary of metrics and dataset properties
+│   ├── dataset_statistics.json      # Class balance and image counts per split
+│   ├── confusion_matrix.png         # Evaluated test set confusion matrix
+│   ├── finetuning_history.png       # Loss & accuracy curves over fine-tuning epochs
+│   └── classification_report.txt    # Precision, recall, and F1 per class
+│
+├── docs/                            # In-depth viva presentation, flowchart, and architecture guides
+│   ├── BACKEND_ARCHITECTURE_GUIDE.md# Component-by-component viva defense explanations
+│   ├── FLOWCHART.md                 # System flowcharts (Mermaid + ASCII)
+│   ├── SYSTEM_ARCHITECTURE.md       # Multi-tier architectural specifications
+│   └── architecture.md
+│
+└── tests/                           # Complete automated unit & integration test suite (7/7 passing)
+    ├── test_api.py                  # FastAPI endpoint integration tests
+    ├── test_model.py                # MobileNetV3 shape and forward pass tests
+    ├── test_quality_check.py        # Defensive image validation tests
+    ├── test_rag.py                  # FAISS retrieval relevance tests
+    ├── test_weather.py              # Weather API & microclimate risk logic tests
+    ├── test_gemini.py               # Gemini prompt formatting tests
+    ├── test_prediction.py           # End-to-end inference & Grad-CAM tests
+    ├── test_dataset_tools.py
+    └── test_integration.py
+
+================================================================================
+10. TEST SUITE & VERIFICATION STATUS
+================================================================================
+- All 7 API test cases pass with 100% success rate:
+  1. test_health_endpoint: PASSED
+  2. test_weather_endpoint: PASSED
+  3. test_predict_endpoint_valid_image: PASSED
+  4. test_predict_rejects_dark_image: PASSED
+  5. test_ask_endpoint_followup: PASSED
+  6. test_ask_endpoint_standalone: PASSED
+  7. test_tts_endpoint: PASSED
+- Command to run backend tests:
+  python -m pytest tests/test_api.py -v
+
+================================================================================
+11. INSTRUCTIONS FOR CONTINUING THE CONVERSATION IN ANOTHER LLM
+================================================================================
+Copy and paste the prompt below into ChatGPT, Claude, Gemini, or any other LLM:
+
+"""
+I am continuing development on my mini-project called 'AI Agriculture Assistant (कृषी सहाय्यक)'.
+Here is the complete context and architectural summary of our project:
+
+1. Overview:
+   - Full-stack AI crop health advisory platform for Tomato, Potato, and Bell Pepper across 13 classes.
+   - Frontend is hosted on Vercel: https://krishi-sahayyak.vercel.app
+   - Backend is hosted on Render: https://krishi-sahayyak.onrender.com
+   - Local offline development runs via FastAPI uvicorn on localhost:8000.
+
+2. Core Tech Stack:
+   - Deep Learning: PyTorch MobileNetV3-Large (16.29MB, 81.89% test accuracy) + Grad-CAM visual lesion explainability.
+   - Preprocessing: Defensive OpenCV/NumPy checks (blur, darkness, washed-out contrast, non-leaf foliage color).
+   - Knowledge Retrieval: FAISS vector database + SentenceTransformers (all-MiniLM-L6-v2) embedding 62 ICAR/TNAU research chunks.
+   - Generative Guidance: Google Gemini 2.5 Flash via google-genai SDK, strictly grounded on RAG context.
+   - Microclimate Risk: OpenWeatherMap / Open-Meteo live API integration for humidity/temperature disease scoring.
+   - Frontend: Vanilla HTML5, CSS3 Glassmorphism dark mode, Vanilla JavaScript with full Marathi (mr) and English (en) I18N.
+   - Audio: Voice recording via browser Web Speech API; Audio advice synthesis via gTTS / edge-tts.
+
+3. Current State:
+   - Both frontend and backend are fully implemented and deployed.
+   - All 7 automated unit & integration tests pass with 100% score (python -m pytest tests/test_api.py -v).
+   - CORS is locked to https://krishi-sahayyak.vercel.app and localhost.
+   - Secrets (GEMINI_API_KEY, WEATHER_API_KEY) are completely isolated on Render and not exposed to visitors.
+
+I have provided the full project details and file structure above. Please help me with: [TYPE YOUR QUESTION HERE]
+"""
+================================================================================
