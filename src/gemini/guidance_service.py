@@ -50,6 +50,7 @@ class GeminiGuidanceService:
         farmer_question: str | None = None,
         language: str = "english",
         is_low_confidence: bool = False,
+        soil: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Generate structured agricultural guidance with multi-model fallback."""
         lang = (language or "english").lower().strip()
@@ -73,6 +74,7 @@ class GeminiGuidanceService:
                         question=farmer_question,
                         is_marathi=is_marathi,
                         is_low_confidence=is_low_confidence,
+                        soil=soil,
                     )
                     if guidance:
                         return guidance
@@ -99,6 +101,7 @@ class GeminiGuidanceService:
             question=farmer_question,
             is_marathi=is_marathi,
             is_low_confidence=is_low_confidence,
+            soil=soil,
         )
 
     def _build_prompt(
@@ -111,6 +114,7 @@ class GeminiGuidanceService:
         question: str | None,
         is_marathi: bool,
         is_low_confidence: bool,
+        soil: dict[str, Any] | None = None,
     ) -> str:
         evidence_text = "\n\n".join([
             f"[Source: {item.get('source', 'Agricultural Extension')}, Title: {item.get('title', 'Advisory')}]\n"
@@ -125,6 +129,49 @@ class GeminiGuidanceService:
             f"Conditions: {weather.get('condition', 'N/A')}. "
             f"Risk note: {weather.get('risk_analysis', 'N/A')}"
         )
+
+        # Build Soil Context Summary
+        soil_summary = "Soil condition: Regional baseline (Live sensor metrics unavailable)."
+        if soil and isinstance(soil, dict):
+            params = soil.get("soil_parameters", {})
+            if not isinstance(params, dict):
+                params = {}
+            st = soil.get("soil_type", {})
+            if isinstance(st, dict):
+                st_name = st.get("name") or st.get("order") or "Regional agricultural soil"
+                st_text = st.get("texture", "")
+            elif isinstance(st, str):
+                st_name = st
+                st_text = ""
+            else:
+                st_name = "Regional agricultural soil"
+                st_text = ""
+            
+            rz = params.get("soil_moisture_root_zone", {}) if isinstance(params.get("soil_moisture_root_zone"), dict) else {}
+            m_val = rz.get("value")
+            m_unit = rz.get("unit", "m³/m³")
+            m_interp = rz.get("interpretation", "")
+            
+            stemp = params.get("soil_temperature_surface", {}) if isinstance(params.get("soil_temperature_surface"), dict) else {}
+            t_val = stemp.get("value")
+            
+            sph = params.get("soil_ph", {}) if isinstance(params.get("soil_ph"), dict) else {}
+            ph_val = sph.get("value")
+            ph_interp = sph.get("interpretation", "")
+            
+            loc = soil.get("location", {}) if isinstance(soil.get("location"), dict) else {}
+            resolved_loc = loc.get("resolved_name") or loc.get("district") or ""
+            
+            soil_parts = [f"Location: {resolved_loc}" if resolved_loc else ""]
+            soil_parts.append(f"Soil Type/Order: {st_name} ({st_text})" if st_text else f"Soil Type/Order: {st_name}")
+            if m_val is not None:
+                soil_parts.append(f"Root-Zone Moisture (3-9cm): {m_val} {m_unit} [{m_interp or 'Live land surface model'}]")
+            if t_val is not None:
+                soil_parts.append(f"Soil Surface Temp: {t_val}°C")
+            if ph_val:
+                soil_parts.append(f"Typical Regional pH: {ph_val} [{ph_interp or 'Survey baseline'}]")
+            soil_parts.append("Note: Available N-P-K (kg/ha) require physical laboratory testing and are unavailable via satellite/remote queries.")
+            soil_summary = "; ".join([p for p in soil_parts if p])
 
         target_lang = "Marathi (मराठी)" if is_marathi else "English"
         has_specific_question = bool(question and question.strip())
@@ -159,6 +206,7 @@ INPUT DATA:
 - Classified Disease / Topic: {disease or 'Agronomic Inquiry'}
 - Model Confidence: {confidence * 100:.1f}% ({'LOW CONFIDENCE' if is_low_confidence else 'NORMAL'})
 - Weather Context: {weather_summary}
+- Live & Regional Soil Health Context: {soil_summary}
 - Farmer's Question: {question or 'What should I do to treat and protect my crop?'}
 
 RETRIEVED AGRICULTURAL EVIDENCE:
@@ -167,8 +215,9 @@ RETRIEVED AGRICULTURAL EVIDENCE:
 Please return your response in JSON format with exactly these keys:
 {{
   "direct_answer": "Direct, empathetic, and comprehensive answer to the farmer's specific question (or immediate executive recommendation if no question was asked).",
-  "explanation": "A simple, clear explanation of what this condition is and why it occurred.",
-  "weather_interpretation": "How current temperature and humidity impact this disease or spray timing.",
+  "explanation": "A simple, clear explanation of what this condition is and why it occurred, integrating weather and soil realities.",
+  "weather_interpretation": "How current atmospheric temperature and humidity impact this disease or spray timing.",
+  "soil_interpretation": "Agronomic analysis of how current soil moisture, soil temperature, and soil type affect root health, waterlogging risk, and pathogen proliferation.",
   "management_guidance": "Clear, bulleted step-by-step cultural, organic, and recommended chemical actions.",
   "prevention": "Practical measures to protect the next crop cycle or unaffected plants.",
   "precautions": "Safety measures, pre-harvest interval, or spray cautions.",
@@ -191,9 +240,10 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
         question: str | None,
         is_marathi: bool,
         is_low_confidence: bool,
+        soil: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         prompt = self._build_prompt(
-            crop, disease, confidence, weather, evidence, question, is_marathi, is_low_confidence
+            crop, disease, confidence, weather, evidence, question, is_marathi, is_low_confidence, soil=soil
         )
 
         response = client.models.generate_content(
@@ -253,6 +303,7 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
         question: str | None,
         is_marathi: bool,
         is_low_confidence: bool,
+        soil: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Evidence-grounded fallback synthesized directly from RAG documents with intelligent intent matching."""
         # Extract evidence content
@@ -476,10 +527,45 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
             )
             advisory = "Consult your local Krishi Vigyan Kendra (KVK) or agricultural extension officer before chemical treatments."
 
+        # Extract soil context if available
+        st_name = "Regional Soil"
+        m_val = None
+        t_val = 25
+        ph_val = "7.0"
+        if soil and isinstance(soil, dict):
+            st = soil.get("soil_type", {})
+            if isinstance(st, dict):
+                st_name = st.get("name") or st.get("order") or "Regional Black/Loam Soil"
+            elif isinstance(st, str):
+                st_name = st
+            else:
+                st_name = "Regional Black/Loam Soil"
+
+            params = soil.get("soil_parameters", {})
+            if isinstance(params, dict):
+                rz = params.get("soil_moisture_root_zone", {}) if isinstance(params.get("soil_moisture_root_zone"), dict) else {}
+                m_val = rz.get("value")
+                stemp = params.get("soil_temperature_surface", {}) if isinstance(params.get("soil_temperature_surface"), dict) else {}
+                t_val = stemp.get("value", 25)
+                sph = params.get("soil_ph", {}) if isinstance(params.get("soil_ph"), dict) else {}
+                ph_val = sph.get("value", "7.0")
+
+        if is_marathi:
+            soil_interp = (
+                f"स्थानिक माती आरोग्य विश्लेषण: {st_name} जमिनीत मुळांच्या थरातील ओलावा {m_val if m_val is not None else 'योग्य'} m³/m³ आणि तापमान {t_val}°C आहे (सामू: {ph_val}). "
+                f"जमिनीतील ओलावा आणि वातावरणातील दमट हवेचा समतोल राखण्यासाठी शेतात पाणी साचू न देणे आणि वापसा स्थितीवरच पाणी देणे आवश्यक आहे."
+            )
+        else:
+            soil_interp = (
+                f"Live Soil Health Analysis: {st_name} exhibits root-zone moisture of {m_val if m_val is not None else 'favorable'} m³/m³ and soil temperature of {t_val}°C (typical pH: {ph_val}). "
+                f"Prevailing soil moisture combined with ambient humidity governs root aeration and fungal spore viability. Maintain adequate drainage and avoid waterlogging."
+            )
+
         return {
             "direct_answer": direct_ans,
             "explanation": explanation,
             "weather_interpretation": weather_interp,
+            "soil_interpretation": soil_interp,
             "management_guidance": management,
             "prevention": prevention,
             "precautions": precautions,

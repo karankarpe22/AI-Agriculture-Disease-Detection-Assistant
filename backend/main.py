@@ -298,6 +298,21 @@ async def ask_question(request: AskRequest):
     resolved_crop = crop or "General / Solanaceae"
     resolved_disease = request.disease or "General Agronomic Inquiry"
 
+    # Live Soil Health context for location
+    soil_data = None
+    if request.location:
+        try:
+            soil_agent = get_soil_agent()
+            soil_req = SoilHealthRequest(
+                location=request.location,
+                crop=resolved_crop if resolved_crop != "General / Solanaceae" else None,
+                language=request.language,
+            )
+            soil_resp = await run_in_threadpool(soil_agent.analyze_soil_health, soil_req)
+            soil_data = soil_resp.model_dump()
+        except Exception as e:
+            logger.warning(f"Soil agent error during ask: {e}")
+
     rag = get_rag_service()
     evidence = await run_in_threadpool(
         rag.retrieve,
@@ -319,6 +334,7 @@ async def ask_question(request: AskRequest):
         farmer_question=request.question,
         language=request.language,
         is_low_confidence=request.is_low_confidence,
+        soil=soil_data,
     )
 
     direct_answer = guidance.get("direct_answer", "")
@@ -331,6 +347,7 @@ async def ask_question(request: AskRequest):
         "question": request.question,
         "direct_answer": direct_answer,
         "weather": weather_data,
+        "soil": soil_data,
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,
@@ -397,10 +414,30 @@ async def analyze_leaf(
             "risk_analysis": "Weather service currently unavailable; follow standard preventative measures.",
         }
 
+    # 2.5 Live Soil Health context (offloaded to threadpool)
+    soil_data = None
+    try:
+        soil_agent = get_soil_agent()
+        soil_req = SoilHealthRequest(
+            location=location or "Pune",
+            crop=crop,
+            language=language,
+        )
+        soil_resp = await run_in_threadpool(soil_agent.analyze_soil_health, soil_req)
+        soil_data = soil_resp.model_dump()
+    except Exception as e:
+        logger.warning(f"Soil agent error during analyze: {e}")
+        soil_data = {
+            "status": "unavailable",
+            "error": str(e),
+            "soil_parameters": {},
+            "data_quality": {"limitations": ["Soil health agent currently unavailable for this request."]}
+        }
+
     # 3. RAG Retrieval from Knowledge Base (offloaded to threadpool)
     try:
         rag = get_rag_service()
-        evidence = await run_in_threadpool(rag.retrieve, crop=crop, disease=disease, question=question, top_k=3)
+        evidence = await run_in_threadpool(rag.retrieve, crop=crop, disease=disease, question=question, top_k=4)
         sources = rag.get_sources_summary(evidence)
     except Exception as e:
         logger.warning(f"RAG retrieval error: {e}")
@@ -420,12 +457,14 @@ async def analyze_leaf(
             farmer_question=question,
             language=language,
             is_low_confidence=is_low_confidence,
+            soil=soil_data,
         )
     except Exception as e:
         logger.warning(f"Gemini service error: {e}")
         guidance = {
             "explanation": f"Observed foliar symptoms are characteristic of {crop} {disease}.",
             "weather_interpretation": "Maintain regular monitoring under prevailing regional conditions.",
+            "soil_interpretation": "Soil condition: maintain favorable root-zone moisture and avoid standing water.",
             "management_guidance": "Apply ICAR-recommended cultural practices and consult local agro-dealers for registered fungicides.",
             "prevention": "Prune affected leaves, avoid overhead irrigation, and sanitize tools.",
             "precautions": "Wear personal protective equipment (PPE) when handling chemical solutions.",
@@ -460,6 +499,7 @@ async def analyze_leaf(
         "warning": pred_result.get("warning"),
         "top_predictions": pred_result.get("top_predictions", []),
         "weather": weather_data,
+        "soil": soil_data,
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,

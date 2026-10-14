@@ -54,15 +54,11 @@
         <div class="mode-tabs" role="tablist">
           <button type="button" class="mode-tab active" id="tab-mode-diagnose" role="tab" aria-selected="true">
             <span class="tab-icon">🌿</span>
-            <span id="txt-tab-diagnose">Leaf Diagnosis</span>
+            <span id="txt-tab-diagnose">Crop Health Diagnosis</span>
           </button>
           <button type="button" class="mode-tab" id="tab-mode-ask" role="tab" aria-selected="false">
             <span class="tab-icon">💬</span>
             <span id="txt-tab-ask">Ask Agronomist</span>
-          </button>
-          <button type="button" class="mode-tab" id="tab-mode-soil" role="tab" aria-selected="false">
-            <span class="tab-icon">🌱</span>
-            <span id="txt-tab-soil">Soil Health</span>
           </button>
         </div>
 
@@ -221,60 +217,7 @@
           </button>
         </div>
 
-        <!-- PANEL 3: Soil Health Mode (Location-driven, No manual pH/NPK entry) -->
-        <div id="panel-soil" class="mode-panel" style="display: none;">
-          <h2 class="card-title">
-            <span class="icon">🌱</span>
-            <span id="txt-soil-title">Soil Health Intelligence</span>
-          </h2>
-          <p class="section-desc" id="txt-soil-desc">
-            Location-driven soil intelligence: live root-zone soil moisture, ICAR soil orders, and crop-tailored agronomic guidance without manual testing inputs.
-          </p>
-
-          <!-- Soil Location Input -->
-          <div class="form-group">
-            <label for="soil-location-input" class="form-label" id="lbl-soil-loc">
-              <span>📍 Farm / District Location:</span>
-            </label>
-            <div class="input-with-chips">
-              <input type="text" id="soil-location-input" class="text-input" placeholder="e.g. Pune, Baramati, Nashik, Solapur" value="Pune">
-              <div class="quick-chips">
-                <button type="button" class="chip soil-chip" data-city="Pune">Pune</button>
-                <button type="button" class="chip soil-chip" data-city="Nashik">Nashik</button>
-                <button type="button" class="chip soil-chip" data-city="Solapur">Solapur</button>
-                <button type="button" class="chip soil-chip" data-city="Kolhapur">Kolhapur</button>
-                <button type="button" class="chip soil-chip" data-city="Nagpur">Nagpur</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Target Crop Context (Optional) -->
-          <div class="form-group">
-            <label class="form-label" id="lbl-soil-crop">🌱 Target Crop (Optional):</label>
-            <div class="crop-chips">
-              <button type="button" class="crop-chip soil-crop-chip active" data-crop="">🌾 General / Any</button>
-              <button type="button" class="crop-chip soil-crop-chip" data-crop="Tomato">🍅 Tomato</button>
-              <button type="button" class="crop-chip soil-crop-chip" data-crop="Potato">🥔 Potato</button>
-              <button type="button" class="crop-chip soil-crop-chip" data-crop="Bell Pepper">🫑 Bell Pepper</button>
-            </div>
-          </div>
-
-          <!-- Scientific Data Notice -->
-          <div class="soil-notice-banner">
-            <span class="notice-icon">ℹ️</span>
-            <span id="txt-soil-notice">
-              Data is automatically retrieved from Open-Meteo Land Surface sensors, ISRIC SoilGrids, and ICAR-NBSS&LUP district benchmarks. No manual chemical measurements required.
-            </span>
-          </div>
-
-          <!-- Analyze Soil Button -->
-          <button type="button" class="btn btn-primary btn-block" id="btn-analyze-soil">
-            <span class="btn-spinner" id="soil-spinner" style="display: none;"></span>
-            <span class="btn-text" id="txt-btn-analyze-soil">Analyze Soil Health</span>
-          </button>
-        </div>
-
-      </section>
+        </section>
 
       <!-- Right Column: Results Section -->
       <section class="card results-card" aria-labelledby="results-heading">
@@ -293,109 +236,6 @@
 
         <!-- Active Results Content (hidden until analyzed) -->
         <div class="results-content" id="results-content" style="display: none;">
-
-          <!-- SOIL HEALTH RESULTS VIEW -->
-          <div id="soil-results-view" style="display: none;">
-            <div class="soil-banner" id="soil-banner">
-              <div class="soil-banner-header">
-                <div>
-                  <div class="soil-scope-badge" id="soil-scope-badge">REGIONAL ESTIMATE & SENSOR GRID</div>
-                  <h3 class="soil-type-title" id="res-soil-type">Vertic Inceptisols / Medium Black Soil</h3>
-                  <div class="soil-location-subtitle" id="res-soil-location">📍 Pune, Maharashtra, India</div>
-                </div>
-                <div class="soil-moist-badge">
-                  <div class="soil-moist-val" id="res-moist-val">15.1%</div>
-                  <div class="soil-moist-lbl" id="txt-moist-lbl">Root Moisture</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Soil Metrics Cards Grid -->
-            <div class="soil-grid-title" id="txt-soil-metrics-title">📊 Retrieved Soil Characteristics</div>
-            <div class="soil-metrics-grid" id="soil-metrics-grid">
-              <!-- Cards injected dynamically by app.js -->
-            </div>
-
-            <!-- Explicitly Missing Parameters Box (Scientific Transparency) -->
-            <div class="soil-missing-box" id="soil-missing-box">
-              <div class="missing-box-header">
-                <span class="missing-icon">🔬</span>
-                <strong id="txt-missing-title">Parameters Requiring Physical Soil Test</strong>
-              </div>
-              <p class="missing-desc" id="txt-missing-desc">
-                The following field-specific chemical parameters are not available in public spatial databases and must not be invented:
-              </p>
-              <ul class="missing-list" id="soil-missing-list">
-                <!-- Injected dynamically -->
-              </ul>
-            </div>
-
-            <!-- Agronomic Guidance Cards -->
-            <div class="guidance-grid">
-              <div class="guidance-card">
-                <div class="guidance-card-header">
-                  <span class="guidance-icon">📋</span>
-                  <h4 id="txt-soil-overview-title">Soil Condition Overview</h4>
-                </div>
-                <p id="res-soil-overview"></p>
-              </div>
-
-              <div class="guidance-card">
-                <div class="guidance-card-header">
-                  <span class="guidance-icon">🌱</span>
-                  <h4 id="txt-soil-suitability-title">Crop Suitability Evaluation</h4>
-                </div>
-                <p id="res-soil-suitability"></p>
-              </div>
-
-              <div class="guidance-card">
-                <div class="guidance-card-header">
-                  <span class="guidance-icon">🚜</span>
-                  <h4 id="txt-soil-recs-title">Soil Management Recommendations</h4>
-                </div>
-                <ul class="recommendation-list" id="res-soil-recs"></ul>
-              </div>
-
-              <div class="guidance-card">
-                <div class="guidance-card-header">
-                  <span class="guidance-icon">🌿</span>
-                  <h4 id="txt-soil-amendments-title">Organic Matter & Bio-Fertilizers</h4>
-                </div>
-                <ul class="recommendation-list" id="res-soil-amendments"></ul>
-              </div>
-
-              <div class="guidance-card">
-                <div class="guidance-card-header">
-                  <span class="guidance-icon">💧</span>
-                  <h4 id="txt-soil-irrigation-title">Root-Zone Moisture & Drainage</h4>
-                </div>
-                <p id="res-soil-irrigation"></p>
-              </div>
-
-              <div class="guidance-card">
-                <div class="guidance-card-header">
-                  <span class="guidance-icon">🧪</span>
-                  <h4 id="txt-soil-testing-title">Soil Testing & KVK Advisory</h4>
-                </div>
-                <p id="res-soil-testing"></p>
-              </div>
-            </div>
-
-            <!-- Scientific Scope & Limitations Box -->
-            <div class="soil-limitations-box">
-              <span class="limitations-icon">⚠️</span>
-              <div>
-                <strong id="txt-limitations-title">Scientific Limitations & Data Scope</strong>
-                <p id="res-soil-limitations"></p>
-              </div>
-            </div>
-
-            <!-- Sources List -->
-            <div class="sources-card">
-              <h4 class="sources-heading" id="txt-soil-sources-title">Verified Soil Data Sources</h4>
-              <div class="soil-sources-list" id="soil-sources-list"></div>
-            </div>
-          </div>
 
           <!-- Direct Q&A Answer Card (Prominently displayed whenever a question is answered) -->
           <div class="qa-answer-card" id="qa-answer-box" style="display: none;">
@@ -458,6 +298,26 @@
             <p class="weather-risk-text" id="weather-risk-text">High humidity favors foliar fungal spore dispersal.</p>
           </div>
 
+          <!-- Integrated Soil Health Conditions Card -->
+          <div class="soil-context-box" id="soil-context-box" style="display: none;">
+            <div class="soil-context-header">
+              <span class="soil-icon">🌱</span>
+              <div>
+                <strong id="soil-ctx-title">Live Soil & Moisture Conditions</strong>
+                <div class="soil-ctx-details" id="soil-ctx-details">Loading soil intelligence...</div>
+              </div>
+            </div>
+            <div class="soil-ctx-grid" id="soil-ctx-grid">
+              <!-- Dynamically populated parameters -->
+            </div>
+            <div class="soil-ctx-missing">
+              <span class="missing-chip-title" id="txt-missing-tag">Field-Test Needed:</span>
+              <span class="missing-chip">Available N-P-K (kg/ha)</span>
+              <span class="missing-chip">Electrical Conductivity</span>
+            </div>
+            <p class="soil-ctx-note" id="soil-ctx-note"></p>
+          </div>
+
           <!-- Audio Read Aloud Player for Full Advisory -->
           <div class="audio-banner" id="audio-banner">
             <button type="button" class="btn-audio" id="tts-btn">
@@ -473,6 +333,11 @@
               <h4 class="block-title"><span class="icon">📖</span> <span id="txt-explanation-title">Explanation</span>
               </h4>
               <p class="block-content" id="guidance-explanation"></p>
+            </div>
+
+            <div class="guidance-block" id="block-soil-impact" style="display: none;">
+              <h4 class="block-title"><span class="icon">🪴</span> <span id="txt-soil-impact-title">Soil & Moisture Interaction</span></h4>
+              <p class="block-content" id="guidance-soil-impact"></p>
             </div>
 
             <div class="guidance-block highlight-block">

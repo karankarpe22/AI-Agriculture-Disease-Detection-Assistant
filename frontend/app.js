@@ -1013,6 +1013,106 @@ function renderResults(data, options = {}) {
   weatherDetails.textContent = `Temp: ${w.temperature_c ?? 25}°C | Humidity: ${w.humidity_percentage ?? 60}% | ${w.condition ?? "Seasonal"}`;
   weatherRiskText.textContent = w.risk_analysis || "Standard seasonal precautions apply.";
 
+  // 3.5 Integrated Soil Health Context
+  const soilBox = document.getElementById("soil-context-box");
+  const soilDetails = document.getElementById("soil-ctx-details");
+  const soilGrid = document.getElementById("soil-ctx-grid");
+  const soilNote = document.getElementById("soil-ctx-note");
+  const blockSoilImpact = document.getElementById("block-soil-impact");
+  const guidanceSoilImpact = document.getElementById("guidance-soil-impact");
+
+  const s = data.soil || {};
+  const sp = s.soil_parameters || {};
+  const hasSoil = Boolean(s && Object.keys(sp).length > 0);
+
+  if (soilBox) {
+    if (hasSoil) {
+      soilBox.style.display = "block";
+      const loc = s.location || {};
+      const st = s.soil_type || {};
+      const isMr = currentLanguage === "marathi";
+
+      const locName = loc.resolved_name || loc.district || loc.query || "Field Location";
+      const soilTypeName = st.name || st.order || (isMr ? "स्थानिक काळी/चिकण माती" : "Regional Soil");
+      if (soilDetails) soilDetails.textContent = `${locName} | ${soilTypeName}`;
+
+      if (soilGrid) {
+        soilGrid.innerHTML = "";
+
+        // 1. Root Zone Soil Moisture
+        if (sp.soil_moisture_root_zone) {
+          const m = sp.soil_moisture_root_zone;
+          const chip = document.createElement("div");
+          chip.className = "soil-ctx-chip";
+          const isHigh = m.value > 0.35;
+          chip.innerHTML = `
+            <span class="label">${isMr ? "मुळांचा ओलावा (३-९ सेमी)" : "Root-Zone Moisture"}</span>
+            <span class="val">${m.value} ${m.unit}</span>
+            <span class="badge ${isHigh ? "badge-amber" : "badge-green"}">${m.interpretation || "Live"}</span>
+          `;
+          soilGrid.appendChild(chip);
+        }
+
+        // 2. Soil Surface Temperature
+        if (sp.soil_temperature_surface) {
+          const t = sp.soil_temperature_surface;
+          const chip = document.createElement("div");
+          chip.className = "soil-ctx-chip";
+          chip.innerHTML = `
+            <span class="label">${isMr ? "मातीचे तापमान (० सेमी)" : "Soil Temperature"}</span>
+            <span class="val">${t.value} ${t.unit}</span>
+            <span class="badge badge-green">${isMr ? "सक्रिय स्तर" : "Active Level"}</span>
+          `;
+          soilGrid.appendChild(chip);
+        }
+
+        // 3. Typical Regional pH
+        if (sp.soil_ph) {
+          const p = sp.soil_ph;
+          const chip = document.createElement("div");
+          chip.className = "soil-ctx-chip";
+          chip.innerHTML = `
+            <span class="label">${isMr ? "जमिनीचा सामू (pH)" : "Typical Soil pH"}</span>
+            <span class="val">${p.value}</span>
+            <span class="badge badge-blue">${p.interpretation || "Regional"}</span>
+          `;
+          soilGrid.appendChild(chip);
+        }
+
+        // 4. Dominant Soil Order / Texture
+        if (st.order || st.texture) {
+          const chip = document.createElement("div");
+          chip.className = "soil-ctx-chip";
+          chip.innerHTML = `
+            <span class="label">${isMr ? "मातीचा प्रकार" : "Soil Order / Texture"}</span>
+            <span class="val">${st.order || "Vertisols"}</span>
+            <span class="badge badge-purple">${st.texture || "Clayey"}</span>
+          `;
+          soilGrid.appendChild(chip);
+        }
+      }
+
+      if (soilNote) {
+        soilNote.textContent = isMr
+          ? "⚠️ शेतातील प्रत्यक्ष नत्र, स्फुरद, पालाश (N-P-K) अचूक तपासणीसाठी जवळच्या कृषी विज्ञान केंद्रात (KVK) माती परीक्षण करून घ्या."
+          : "⚠️ Note: Exact available N-P-K (kg/ha) requires wet-chemistry soil test; consult local KVK or Soil Testing Lab.";
+      }
+    } else {
+      soilBox.style.display = "none";
+    }
+  }
+
+  // Soil & Moisture Impact Block
+  if (blockSoilImpact && guidanceSoilImpact) {
+    const soilInterp = (data.guidance && data.guidance.soil_interpretation) || "";
+    if (soilInterp) {
+      blockSoilImpact.style.display = "block";
+      guidanceSoilImpact.textContent = soilInterp;
+    } else {
+      blockSoilImpact.style.display = "none";
+    }
+  }
+
   // 4. Structured Guidance
   const g = data.guidance || {};
   guidanceExplanation.textContent = g.explanation || "Agricultural advisory analysis complete.";
@@ -1022,7 +1122,8 @@ function renderResults(data, options = {}) {
   guidanceAdvisory.textContent = g.expert_advisory || "Consult your local KVK.";
 
   // Prepare full speech text
-  currentGuidanceText = `${data.crop || "Crop"} ${data.disease || ""}. ${directAnswerText ? directAnswerText + ". " : ""}${g.explanation || ""}. ${g.management_guidance || ""}`;
+  const soilSpeech = g.soil_interpretation ? ` ${g.soil_interpretation}. ` : "";
+  currentGuidanceText = `${data.crop || "Crop"} ${data.disease || ""}. ${directAnswerText ? directAnswerText + ". " : ""}${g.explanation || ""}. ${soilSpeech}${g.management_guidance || ""}`;
 
   // 5. Grad-CAM (Only in image diagnosis mode)
   if (!isStandalone && data.gradcam_base64) {
