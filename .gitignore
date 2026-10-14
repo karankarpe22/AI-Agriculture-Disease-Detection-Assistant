@@ -64,3 +64,4 @@ work/
 # Audio Cache
 outputs/audio_cache/
 *.mp3
+outputs/cache/

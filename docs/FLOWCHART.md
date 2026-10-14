@@ -261,3 +261,38 @@ flowchart TD
   │  • Microsoft Azure Neural Voice: Neerja (English) & Aarohi (Marathi)   │
   └────────────────────────────────────────────────────────────────────────┘
 ```
+
+## 6. Soil Health Agent Decision & Multi-Source Flowchart
+
+```mermaid
+flowchart TD
+    A([Farmer Inputs Location & Optional Crop]) --> B[Normalize & Geocode Location]
+    B --> C{Cache Hit in TTL Disk Store?}
+    C -- Yes --> D[Load Cached Verified Soil Context]
+    C -- No --> E[Parallel Query Source Registry]
+    
+    subgraph Multi_Source_Adapters [Verified Multi-Source Adapters]
+        E --> S1[Open-Meteo Land Surface API<br>Root-Zone Moisture & Temp<br>Category: location_measured]
+        E --> S2[ISRIC SoilGrids 250m REST API<br>Gridded Soil Texture & SOC<br>Category: regional_estimate]
+        E --> S3[ICAR-NBSS&LUP & SHC Compendium<br>District Soil Series & Nutrients<br>Category: regional_estimate]
+    end
+    
+    S1 --> F[Soil Normalizer & Agronomic Evaluator]
+    S2 --> F
+    S3 --> F
+    
+    F --> G[Extract Available Soil Parameters<br>Retain Unit, Scope & Provenance]
+    G --> H[Audit Missing Parameters<br>Explicitly Flag Available N-P-K as Unavailable]
+    H --> I[Store Validated Result in Soil Cache]
+    
+    I --> J[Retrieve Soil Management Knowledge from FAISS RAG]
+    D --> J
+    
+    J --> K[Construct Structured Payload for Gemini]
+    K --> L{Gemini API Reachable?}
+    L -- Yes --> M[Gemini Synthesizes Bilingual Soil Advisory]
+    L -- No / Offline --> N[Deterministic Rule-Based Fallback Advisory]
+    
+    M --> O([Deliver Soil Health Assessment to Farmer UI])
+    N --> O
+```

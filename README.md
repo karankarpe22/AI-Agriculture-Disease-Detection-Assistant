@@ -191,6 +191,33 @@ The weather module queries real-time meteorological conditions by city or coordi
 
 ---
 
+---
+
+## 10. Autonomous Soil Health Agent (Real-Time Location Driven)
+
+The **Soil Health Agent** (src/soil/) is a dedicated autonomous intelligence subsystem that resolves a farmer's geographic location (Village/Town, District, State) and automatically acquires verified physical, chemical, and moisture soil data without requiring manual entry of complex laboratory numbers.
+
+### Key Capabilities & Scientific Integrity:
+1. **Zero Manual Chemical Entry Required**: The farmer simply provides their location and optional crop.
+2. **Multi-Source Verified Data Adapters**:
+   - **Open-Meteo Land Surface API**: Real-time volumetric soil moisture (^3/m^3$) at 0-1cm (surface) and 3-9cm (root zone), plus soil temperature at 0cm and 6cm depth based on high-resolution land surface models (location_measured).
+   - **ISRIC SoilGrids 250m REST API**: Global gridded digital soil mapping for soil texture, bulk density, and organic carbon estimates (
+egional_estimate).
+   - **ICAR-NBSS&LUP & National Soil Health Card Compendium**: Authoritative district-level database covering Maharashtra (Pune, Nashik, Solapur, Kolhapur, Nagpur, etc.) and Indian benchmark soils with dominant soil orders (Vertisols, Inceptisols, Alfisols), typical pH ranges, and nutrient availability trends (
+egional_estimate).
+3. **Strict Scientific Data Categorization**:
+   - ield_measured: Laboratory chemical test directly from the farmer's specific field plot.
+   - location_measured: Physical sensor/satellite measurement at the resolved geographic coordinate.
+   - 
+egional_estimate: Gridded raster or district-level soil survey compendium estimate.
+   - general_reference: Agronomic reference benchmark.
+   - unavailable: Explicitly flagged missing parameters.
+4. **Never Invented / Fabricated Values**: Field-level available Nitrogen ($), Phosphorus ($), and Potassium ($) in kg/ha cannot be measured remotely and are **never invented**. The agent explicitly lists them under missing_parameters and advises the farmer to visit their local Soil Testing Laboratory (STL) or Krishi Vigyan Kendra (KVK).
+5. **Crop-Specific Agronomic Thresholds**: Science-backed evaluation ranges for Tomato, Potato, and Bell Pepper based on ICAR-IIHR, ICAR-CPRI, and TNAU standards.
+6. **Bilingual Advisory Integration**: Retrieved soil parameters, evidence from RAG soil management guides, and weather context are synthesized by Google Gemini into clear, practical guidance in English or Marathi.
+
+---
+
 ## 11. Voice Accessibility (Speech-to-Text & Text-to-Speech)
 
 - **Speech-to-Text**: Native browser Web Speech API (`webkitSpeechRecognition`) supporting Marathi (`mr-IN`) and English (`en-IN`).

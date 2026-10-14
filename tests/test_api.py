@@ -115,3 +115,21 @@ def test_tts_endpoint():
     if response.status_code == 200:
         assert response.headers["content-type"] == "audio/mpeg"
         assert len(response.content) > 1000
+
+
+def test_soil_health_endpoint():
+    payload = {
+        "location": "Pune",
+        "crop": "Tomato",
+        "language": "english",
+    }
+    response = client.post("/soil-health", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] in ["success", "partial"]
+    assert data["location"]["district"].lower() == "pune"
+    assert "soil_parameters" in data
+    assert "guidance" in data
+    assert len(data["guidance"]["recommendations"]) > 0
+    assert "data_quality" in data
+    assert len(data["data_quality"]["limitations"]) > 0

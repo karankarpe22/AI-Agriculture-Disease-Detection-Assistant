@@ -366,3 +366,26 @@ Here is the complete context and architectural summary of our project:
 I have provided the full project details and file structure above. Please help me with: [TYPE YOUR QUESTION HERE]
 """
 ================================================================================
+
+================================================================================
+AUTONOMOUS SOIL HEALTH AGENT (NEW SUBSYSTEM: src/soil/)
+================================================================================
+- Location: src/soil/
+- Files:
+  * src/soil/soil_schemas.py: Pydantic schemas (DataCategory, ExtractionStatus,
+    SoilParameterValue, LocationDetail, DataQualityMetadata, SoilHealthResponse).
+  * src/soil/soil_cache.py: Thread-safe disk cache in outputs/cache/ (24h TTL).
+  * src/soil/soil_data_sources.py: Multi-source adapters (Open-Meteo Land Surface,
+    ISRIC SoilGrids 250m, ICAR-NBSS&LUP Maharashtra district database).
+  * src/soil/soil_normalizer.py: Parameter & unit normalizer + crop suitability
+    thresholds (Tomato, Potato, Bell Pepper) for pH, moisture, SOC, and temp.
+  * src/soil/soil_extractor.py: Provenance-preserving extractor & missing-parameter auditor.
+  * src/soil/soil_agent.py: SoilHealthAgent orchestrator connecting sources,
+    RAG vector search, Gemini bilingual guidance, and weather context.
+- API Endpoint: POST /soil-health
+- Frontend Integration: Dedicated Soil Health tab with district quick-chips,
+  glassmorphic cards, scientific data notice, missing-parameter badges,
+  and source attribution.
+- Scientific Integrity: NEVER hallucinate missing N-P-K or fertilizer numbers.
+  Parameters not in public APIs are explicitly marked 'unavailable' and the farmer
+  is advised to test their soil sample at an accredited laboratory or KVK.

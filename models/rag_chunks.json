@@ -190,6 +190,136 @@
     "file": "potato_late_blight.md"
   },
   {
+    "title": "Bell Pepper Soil Requirements, Salinity Sensitivity and Drainage",
+    "source": "ICAR - Indian Institute of Vegetable Research (IIVR), Varanasi & TNAU",
+    "crop": "Bell Pepper / Capsicum (*Capsicum annuum*)",
+    "disease": "Capsicum Soil Aeration, Salinity Tolerance and Micronutrients",
+    "reference": "TNAU Agritech Portal & Commercial Capsicum Production Manual",
+    "heading": "Soil Aeration, Drainage and Texture",
+    "content": "Bell pepper (Capsicum) has a fibrous and relatively shallow root system (70% of active feeding roots are in the upper 20-30 cm soil layer).\n- Optimal Soil Type: Highly well-drained sandy loam, rich loam, or light clay loam with high organic matter (>1.0%).\n- Intolerance to Waterlogging: Capsicum is one of the most sensitive horticultural crops to poor soil aeration. Anaerobic soil conditions for even 12 hours cause leaf epinasty (downward leaf curling), flower drop, and rapid outbreak of Phytophthora root and crown rot (*Phytophthora capsici*).\n- Raised Bed & Mulching: Planting on 20 cm high raised beds with silver-black polyethylene mulch regulates root-zone soil temperature, prevents weed competition, and maintains uniform soil moisture.",
+    "file": "soil_bell_pepper_nutrient_management.md"
+  },
+  {
+    "title": "Bell Pepper Soil Requirements, Salinity Sensitivity and Drainage",
+    "source": "ICAR - Indian Institute of Vegetable Research (IIVR), Varanasi & TNAU",
+    "crop": "Bell Pepper / Capsicum (*Capsicum annuum*)",
+    "disease": "Capsicum Soil Aeration, Salinity Tolerance and Micronutrients",
+    "reference": "TNAU Agritech Portal & Commercial Capsicum Production Manual",
+    "heading": "Salinity Sensitivity and pH Requirements",
+    "content": "- Ideal pH Range: 6.0 to 6.8.\n- Salinity Hazard: Bell pepper is classified as moderately sensitive to soil salinity. Electrical Conductivity (EC) of saturation extract exceeding 1.5 dS/m leads to yield reduction of up to 25%, stunted canopy growth, and blossom end rot. In saline soils or with brackish irrigation water, frequent light irrigations and leaching fractions are necessary.",
+    "file": "soil_bell_pepper_nutrient_management.md"
+  },
+  {
+    "title": "Bell Pepper Soil Requirements, Salinity Sensitivity and Drainage",
+    "source": "ICAR - Indian Institute of Vegetable Research (IIVR), Varanasi & TNAU",
+    "crop": "Bell Pepper / Capsicum (*Capsicum annuum*)",
+    "disease": "Capsicum Soil Aeration, Salinity Tolerance and Micronutrients",
+    "reference": "TNAU Agritech Portal & Commercial Capsicum Production Manual",
+    "heading": "Organic Manuring and Micronutrient Balance",
+    "content": "- Soil-borne Disease Suppression: Incorporation of 250-500 kg/ha of neem cake into planting beds effectively suppresses plant-parasitic nematodes (*Meloidogyne incognita*) and provides slow-release nitrogen.\n- Micronutrient Balance: In high pH or calcareous soils, bell pepper frequently exhibits zinc deficiency (little leaf, rosetting) and iron chlorosis (interveinal yellowing of youngest leaves). Basal soil application of zinc sulphate (20-25 kg/ha) or foliar application of chelated zinc (1.0 g/L) and ferrous sulphate (2.0 g/L with citric acid) prevents physiological deficiencies.",
+    "file": "soil_bell_pepper_nutrient_management.md"
+  },
+  {
+    "title": "Soil Health and Land Resource Management in Indian Agriculture",
+    "source": "ICAR - National Bureau of Soil Survey and Land Use Planning (NBSS&LUP), Nagpur & ICAR-CRIDA, Hyderabad",
+    "crop": "General / Horticultural Crops",
+    "disease": "Soil Health, Soil Orders, pH and Nutrient Dynamics",
+    "reference": "ICAR Benchmark Soils of India & National Soil Health Card Guidelines",
+    "heading": "Soil Orders and Regional Characteristics",
+    "content": "Indian agricultural soils are primarily classified into major orders:\n1. Vertisols and Vertic Inceptisols (Black Cotton Soils): Prevalent across Maharashtra (Deccan basaltic plateau), Madhya Pradesh, and Gujarat. High clay content (>40%, predominantly smectite/montmorillonite), high swelling and shrinking characteristics, deep crack formation during dry periods, high moisture holding capacity, and moderate to high cation exchange capacity (CEC 35-55 cmol(c)/kg). Typical pH is neutral to moderately alkaline (7.5 - 8.4).\n2. Inceptisols and Entisols (Alluvial and Medium Black Soils): Widespread in river valleys and transitional plains. Variable texture from sandy loam to clay loam, good drainage, moderate fertility, and pH ranging from 6.5 to 7.8.\n3. Alfisols and Ultisols (Red and Lateritic Soils): Common in Western Ghats, Konkan coastal strip, and plateau fringes. Coarse to medium textured, prone to acidity (pH 5.0 - 6.5), low water holding capacity, and high phosphorus fixation due to iron and aluminum oxides.",
+    "file": "soil_health_management_general.md"
+  },
+  {
+    "title": "Soil Health and Land Resource Management in Indian Agriculture",
+    "source": "ICAR - National Bureau of Soil Survey and Land Use Planning (NBSS&LUP), Nagpur & ICAR-CRIDA, Hyderabad",
+    "crop": "General / Horticultural Crops",
+    "disease": "Soil Health, Soil Orders, pH and Nutrient Dynamics",
+    "reference": "ICAR Benchmark Soils of India & National Soil Health Card Guidelines",
+    "heading": "Soil Reaction pH and Correction Protocols",
+    "content": "Soil pH controls the chemical bioavailability of essential plant macro and micro-nutrients:\n- Strongly Acidic (pH < 5.5): Severe phosphorus fixation, aluminum/manganese toxicity, and reduced calcium/magnesium availability. Remediation requires agricultural lime (calcium carbonate CaCO3) or dolomite application at 1.5 to 3.0 tonnes/ha based on soil buffer capacity, incorporated 3-4 weeks prior to transplanting.\n- Optimal Neutral (pH 6.2 - 7.2): Maximum nutrient availability for microbial nitrogen fixation, soluble phosphorus, and balanced cation uptake.\n- Moderately Alkaline / Calcareous (pH 7.8 - 8.5): Common in Deccan Vertisols. High free calcium carbonate causes fixation of phosphorus (into insoluble calcium phosphates) and micronutrient deficiencies (iron chlorosis, zinc deficiency). Remediation includes regular addition of organic amendments (FYM, compost), sulphur application (150-250 kg/ha), gypsum for sodic conditions, and foliar feeding of chelated micronutrients (Fe-EDTA, Zn-EDTA).",
+    "file": "soil_health_management_general.md"
+  },
+  {
+    "title": "Soil Health and Land Resource Management in Indian Agriculture",
+    "source": "ICAR - National Bureau of Soil Survey and Land Use Planning (NBSS&LUP), Nagpur & ICAR-CRIDA, Hyderabad",
+    "crop": "General / Horticultural Crops",
+    "disease": "Soil Health, Soil Orders, pH and Nutrient Dynamics",
+    "reference": "ICAR Benchmark Soils of India & National Soil Health Card Guidelines",
+    "heading": "Soil Organic Carbon and Biological Fertility",
+    "content": "Soil Organic Carbon (SOC) is the primary driver of soil biological activity, aggregate stability, and moisture retention:\n- Low SOC (<0.50%): Common in semi-arid tropical soils due to rapid microbial oxidation under high temperatures. Indicates poor microbial biodiversity and low nutrient buffer capacity.\n- Medium SOC (0.50% - 0.75%): Moderate fertility requiring maintenance.\n- High SOC (>0.75%): Desirable biological fertility.\nRecommended Management Practices:\n1. Basal incorporation of well-decomposed Farmyard Manure (FYM) or compost at 10-15 tonnes/ha or vermicompost at 2.5-5 tonnes/ha before sowing.\n2. In-situ green manuring with Sunnhemp (*Crotalaria juncea*) or Dhaincha (*Sesbania aculeata*) incorporated at 45-50 days (flowering stage), adding 15-20 tonnes/ha of biomass and 60-80 kg N/ha.\n3. Inoculation with bio-fertilizers: Azotobacter / Azospirillum for non-symbiotic nitrogen fixation, and Phosphate Solubilizing Bacteria (PSB - *Bacillus megaterium* or *Pseudomonas striata*) at 5 kg/ha mixed with FYM.",
+    "file": "soil_health_management_general.md"
+  },
+  {
+    "title": "Soil Health and Land Resource Management in Indian Agriculture",
+    "source": "ICAR - National Bureau of Soil Survey and Land Use Planning (NBSS&LUP), Nagpur & ICAR-CRIDA, Hyderabad",
+    "crop": "General / Horticultural Crops",
+    "disease": "Soil Health, Soil Orders, pH and Nutrient Dynamics",
+    "reference": "ICAR Benchmark Soils of India & National Soil Health Card Guidelines",
+    "heading": "Macronutrient Indices and Laboratory Soil Testing",
+    "content": "Official Indian Soil Health Card critical nutrient limits:\n- Available Nitrogen (Alkaline Permanganate method): Low (<280 kg/ha), Medium (280 - 560 kg/ha), High (>560 kg/ha).\n- Available Phosphorus (Olsen method for neutral/alkaline soils): Low (<10 kg P/ha or <23 kg P2O5/ha), Medium (10 - 25 kg P/ha), High (>25 kg P/ha).\n- Available Potassium (Neutral Ammonium Acetate method): Low (<110 kg K/ha or <133 kg K2O/ha), Medium (110 - 280 kg K/ha), High (>280 kg K2O/ha).\n- Salinity Hazard (Electrical Conductivity 1:2 soil-water extract): Non-saline (<1.0 dS/m), Slightly saline / sensitive crop injury (1.0 - 2.0 dS/m), Severely saline (>4.0 dS/m).\nFarmers must have a representative composite field soil sample tested at an authorized Soil Testing Laboratory (STL) or Krishi Vigyan Kendra (KVK) every 2-3 years to establish exact field fertilizer schedules.",
+    "file": "soil_health_management_general.md"
+  },
+  {
+    "title": "Potato Soil Management, Acidic Preference and Tuberization",
+    "source": "ICAR - Central Potato Research Institute (CPRI), Shimla",
+    "crop": "Potato (*Solanum tuberosum*)",
+    "disease": "Potato Soil Requirements, Compaction and Common Scab Prevention",
+    "reference": "CPRI Agronomic Guidelines for Commercial Potato Cultivation",
+    "heading": "Optimal Soil Physical Conditions and pH Range",
+    "content": "Potato is a subterranean tuber crop requiring a loose, friable, well-aerated sandy loam, silt loam, or light alluvial soil with high organic matter content.\n- Ideal pH Range: 5.2 to 6.4 (moderately acidic to slightly acidic).\n- Common Scab (*Streptomyces scabies*) Warning: Alkaline or limed soils (pH > 6.8 - 7.5) significantly increase the incidence of Common Scab, which causes rough corky lesions on tuber skins. In alkaline soils, avoid liming and use physiologically acidic fertilizers such as ammonium sulphate or apply elemental sulphur.\n- Bulk Density and Compaction: Potato roots and stolons cannot penetrate dense or compacted soil layers. Bulk density should remain below 1.35 g/cm\u00b3. Hardpan formation causes distorted, irregular, knobby tubers and drastically reduces commercial marketable grade. Deep summer subsoiling followed by fine tilth preparation is essential.",
+    "file": "soil_potato_nutrient_management.md"
+  },
+  {
+    "title": "Potato Soil Management, Acidic Preference and Tuberization",
+    "source": "ICAR - Central Potato Research Institute (CPRI), Shimla",
+    "crop": "Potato (*Solanum tuberosum*)",
+    "disease": "Potato Soil Requirements, Compaction and Common Scab Prevention",
+    "reference": "CPRI Agronomic Guidelines for Commercial Potato Cultivation",
+    "heading": "Tuber Bulking and Soil Moisture Regulation",
+    "content": "Soil moisture within the 0 to 30 cm tuber zone governs tuber initiation and expansion:\n- Optimal moisture regime: 65% to 75% of field capacity throughout tuber initiation (20-35 days after planting) and tuber bulking (35-70 days after planting).\n- Uneven irrigation (drought followed by heavy irrigation) causes growth cracks, hollow heart, and secondary knobby tuber growth.\n- Stagnant water or saturated soil during tuber development restricts gas exchange, promotes lenticel proliferation, and causes soft rot (*Pectobacterium carotovorum*) in the field and storage.",
+    "file": "soil_potato_nutrient_management.md"
+  },
+  {
+    "title": "Potato Soil Management, Acidic Preference and Tuberization",
+    "source": "ICAR - Central Potato Research Institute (CPRI), Shimla",
+    "crop": "Potato (*Solanum tuberosum*)",
+    "disease": "Potato Soil Requirements, Compaction and Common Scab Prevention",
+    "reference": "CPRI Agronomic Guidelines for Commercial Potato Cultivation",
+    "heading": "Fertilizer Dynamics and Potassium Nutrition",
+    "content": "Potato is an exhaustive, heavy consumer of soil nutrients:\n- Potassium: Highest nutrient uptake. Potassium Sulphate (SOP - 0-0-50) is strongly preferred over Muriate of Potash (MOP - 0-0-60) because chloride ions reduce tuber starch content, specific gravity, and processing chip quality.\n- Organic Matter: Responds dramatically to green manuring or 25 tonnes/ha of well-rotted FYM. Bio-fertilizer treatment of seed tubers with Azotobacter and PSB enhances nutrient uptake efficiency.",
+    "file": "soil_potato_nutrient_management.md"
+  },
+  {
+    "title": "Tomato Soil Health, Nutrition and Rhizosphere Management",
+    "source": "ICAR - Indian Institute of Horticultural Research (IIHR), Bengaluru & TNAU Agritech Portal",
+    "crop": "Tomato (*Solanum lycopersicum*)",
+    "disease": "Tomato Soil Requirements, Salinity and Calcium Nutrition",
+    "reference": "ICAR Package of Practices for Tomato Production & Plant Nutrition",
+    "heading": "Optimal Soil Type and Reaction",
+    "content": "Tomato thrives in deep, fertile, well-drained loams, sandy loams, or medium black soils rich in organic matter.\n- Ideal pH range: 6.0 to 7.0. Tomatoes tolerate mild acidity down to pH 5.5 and mild alkalinity up to pH 7.8.\n- Soil Drainage: Tomato roots are extremely sensitive to poor drainage and waterlogging. Subsurface saturation (>24 hours) causes rapid root asphyxiation, wilting, and triggers soil-borne fungal pathogens (*Fusarium oxysporum*, *Pythium*, and *Phytophthora*).\n- Raised bed cultivation (15-20 cm height, 90-120 cm width) with drip lateral lines is strongly recommended on heavy black soils (Vertisols) to maintain optimal soil aeration and prevent root diseases.",
+    "file": "soil_tomato_nutrient_management.md"
+  },
+  {
+    "title": "Tomato Soil Health, Nutrition and Rhizosphere Management",
+    "source": "ICAR - Indian Institute of Horticultural Research (IIHR), Bengaluru & TNAU Agritech Portal",
+    "crop": "Tomato (*Solanum lycopersicum*)",
+    "disease": "Tomato Soil Requirements, Salinity and Calcium Nutrition",
+    "reference": "ICAR Package of Practices for Tomato Production & Plant Nutrition",
+    "heading": "Blossom End Rot and Calcium Moisture Interaction",
+    "content": "Blossom End Rot (BER) is a physiological disorder characterized by water-soaked, sunken, leathery black spots at the blossom end of green or ripening tomato fruits.\n- Primary Cause: Calcium deficiency in rapidly expanding fruit tissue. This is almost never caused by a simple lack of soil calcium, but rather by fluctuating soil moisture (alternating cycles of drought stress and excessive irrigation) or high soil salinity/EC, which impairs calcium transpirational pull through xylem vessels.\n- Management: Maintain consistent root-zone moisture (soil moisture tension 20-30 kPa). Apply agricultural gypsum (calcium sulphate) at 250-500 kg/ha in calcareous or calcium-depleted soils. Apply foliar sprays of calcium nitrate (0.5%) or chelated calcium (0.2%) at flowering and early fruit development stages.",
+    "file": "soil_tomato_nutrient_management.md"
+  },
+  {
+    "title": "Tomato Soil Health, Nutrition and Rhizosphere Management",
+    "source": "ICAR - Indian Institute of Horticultural Research (IIHR), Bengaluru & TNAU Agritech Portal",
+    "crop": "Tomato (*Solanum lycopersicum*)",
+    "disease": "Tomato Soil Requirements, Salinity and Calcium Nutrition",
+    "reference": "ICAR Package of Practices for Tomato Production & Plant Nutrition",
+    "heading": "Balanced Fertigation and Nutrient Partitioning",
+    "content": "Nutrient requirements of tomato vary across physiological stages:\n1. Basal Stage: 25-30% of total N, 100% of P (as single superphosphate SSP or DAP), and 25% of K incorporated with organic manure. High phosphorus is critical for early root development.\n2. Vegetative to Flowering Stage: Balanced N and K application. Avoid excess nitrogen which promotes excessive succulent foliage, delayed flowering, and vulnerability to suckling pests (whiteflies, aphids) and Early Blight.\n3. Fruit Bulking and Harvesting Stage: Heavy potassium demand. Potassium promotes fruit firmness, uniform red pigmentation (lycopene synthesis), total soluble solids (Brix), and shelf life. Apply water-soluble potassium nitrate (13-0-45) or sulphate of potash (0-0-50) via drip fertigation.",
+    "file": "soil_tomato_nutrient_management.md"
+  },
+  {
     "title": "Tomato Bacterial Spot Management",
     "source": "ICAR - Indian Institute of Vegetable Research (IIVR), Varanasi",
     "crop": "Tomato (*Solanum lycopersicum*)",
