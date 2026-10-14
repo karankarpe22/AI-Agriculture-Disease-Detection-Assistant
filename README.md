@@ -295,12 +295,6 @@ For in-depth engineering documentation, architecture diagrams, technical specifi
 
 | Document | Purpose & Scope |
 | :--- | :--- |
-| **[`agents.md`](agents.md)** | AI coding agent operating guidelines, inspection workflows, and development principles. |
-| **[`architecture.md`](architecture.md)** | Complete multi-tier system architecture, component boundaries, and ASCII data flow diagrams. |
-| **[`decisions.md`](decisions.md)** | Technical decisions log (MobileNetV3-Large, transfer learning, zero-RAM RAG, Gemini decoupling). |
-| **[`design.md`](design.md)** | Detailed interaction designs, user journeys, image quality checks, and endpoint matrices. |
-| **[`memory.md`](memory.md)** | Persistent ground-truth project memory, 13-class mappings, and verified evaluation metrics. |
-| **[`prd.md`](prd.md)** | Product Requirements Document for the implemented system, with scope status tags. |
-| **[`rules.md`](rules.md)** | Mandatory engineering rules, anti-hallucination constraints, and development invariants. |
-| **[`testing.md`](testing.md)** | Comprehensive testing strategy and verified 24-test matrix (100% pass rate). |
-| **[`trd.md`](trd.md)** | Technical Requirements Document covering dependencies, model layers, APIs, and hosting. |
+| **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)** | Complete multi-tier system architecture, component boundaries, and end-to-end data flow diagrams. |
+| **[docs/BACKEND_ARCHITECTURE_GUIDE.md](docs/BACKEND_ARCHITECTURE_GUIDE.md)** | Viva defense guide explaining every backend component, image quality checks, transfer learning, and RAG. |
+| **[docs/FLOWCHART.md](docs/FLOWCHART.md)** | Visual Mermaid and text flowcharts representing the complete application pipeline. |
