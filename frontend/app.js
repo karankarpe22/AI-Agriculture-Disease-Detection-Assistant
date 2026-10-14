@@ -39,25 +39,6 @@ const I18N = {
     lblQuestion: "❓ Farmer Question",
     lblQuestionSub: "(Optional specific question)",
     qPlaceholder: "e.g. Can I use neem oil spray? How do I stop this from spreading?",
-    tabSoil: "Soil Health",
-    soilTitle: "Soil Health Intelligence",
-    soilDesc: "Location-driven soil intelligence: live root-zone soil moisture, ICAR soil orders, and crop-tailored agronomic guidance without manual testing inputs.",
-    lblSoilLoc: "📍 Farm / District Location:",
-    lblSoilCrop: "🌱 Target Crop (Optional):",
-    txtSoilNotice: "Data is automatically retrieved from Open-Meteo Land Surface sensors, ISRIC SoilGrids, and ICAR-NBSS&LUP district benchmarks. No manual chemical measurements required.",
-    btnAnalyzeSoil: "Analyze Soil Health",
-    btnAnalyzingSoil: "Retrieving Soil Intelligence...",
-    txtSoilMetricsTitle: "📊 Retrieved Soil Characteristics",
-    txtMissingTitle: "Parameters Requiring Physical Soil Test",
-    txtMissingDesc: "The following field-specific chemical parameters are not available in public spatial databases and must not be invented:",
-    txtSoilOverviewTitle: "Soil Condition Overview",
-    txtSoilSuitabilityTitle: "Crop Suitability Evaluation",
-    txtSoilRecsTitle: "Soil Management Recommendations",
-    txtSoilAmendmentsTitle: "Organic Matter & Bio-Fertilizers",
-    txtSoilIrrigationTitle: "Root-Zone Moisture & Drainage",
-    txtSoilTestingTitle: "Soil Testing & KVK Advisory",
-    txtLimitationsTitle: "Scientific Limitations & Data Scope",
-    txtSoilSourcesTitle: "Verified Soil Data Sources",
     gradcamOpt: "Generate Grad-CAM Visual Attention Heatmap",
     btnAnalyze: "Analyze Crop Health",
     btnAnalyzing: "Analyzing Leaf & Weather...",
@@ -261,17 +242,6 @@ const followupThread = document.getElementById("followup-thread");
 
 const systemBadge = document.getElementById("system-status-text");
 
-// Soil Health Elements
-const tabModeSoil = document.getElementById("tab-mode-soil");
-const panelSoil = document.getElementById("panel-soil");
-const soilLocationInput = document.getElementById("soil-location-input");
-const btnAnalyzeSoil = document.getElementById("btn-analyze-soil");
-const soilSpinner = document.getElementById("soil-spinner");
-const txtBtnAnalyzeSoil = document.getElementById("txt-btn-analyze-soil");
-const soilResultsView = document.getElementById("soil-results-view");
-let selectedSoilCrop = "";
-let lastSoilData = null;
-
 // Application Initialization
 document.addEventListener("DOMContentLoaded", () => {
   setupLanguageSwitcher();
@@ -286,7 +256,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSampleSelectors();
   checkSystemHealth();
   setupBadge();
-  setupSoilSubmission();
 });
 
 // System Health Check with automatic Render cold-start retry
@@ -346,27 +315,6 @@ function setupBadge() {
 function setupModeTabs() {
   tabModeDiagnose.addEventListener("click", () => switchMode("diagnose"));
   tabModeAsk.addEventListener("click", () => switchMode("ask"));
-  if (tabModeSoil) {
-    tabModeSoil.addEventListener("click", () => switchMode("soil"));
-  }
-
-  // Quick soil district chips
-  document.querySelectorAll(".chip.soil-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      if (soilLocationInput) {
-        soilLocationInput.value = chip.dataset.city || "Pune";
-      }
-    });
-  });
-
-  // Soil crop selection chips
-  document.querySelectorAll(".crop-chip.soil-crop-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      document.querySelectorAll(".crop-chip.soil-crop-chip").forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      selectedSoilCrop = chip.dataset.crop || "";
-    });
-  });
 
   // Crop context chips in Standalone Q&A
   const cropChips = document.querySelectorAll(".crop-chip");
@@ -381,46 +329,20 @@ function setupModeTabs() {
 
 function switchMode(mode) {
   activeMode = mode;
-  tabModeDiagnose.classList.remove("active");
-  tabModeDiagnose.setAttribute("aria-selected", "false");
-  tabModeAsk.classList.remove("active");
-  tabModeAsk.setAttribute("aria-selected", "false");
-  if (tabModeSoil) {
-    tabModeSoil.classList.remove("active");
-    tabModeSoil.setAttribute("aria-selected", "false");
-  }
-
-  panelDiagnose.style.display = "none";
-  panelAsk.style.display = "none";
-  if (panelSoil) panelSoil.style.display = "none";
-
   if (mode === "diagnose") {
     tabModeDiagnose.classList.add("active");
     tabModeDiagnose.setAttribute("aria-selected", "true");
+    tabModeAsk.classList.remove("active");
+    tabModeAsk.setAttribute("aria-selected", "false");
     panelDiagnose.style.display = "block";
-    if (soilResultsView) soilResultsView.style.display = "none";
-    if (diagnosisBanner && currentCrop) diagnosisBanner.style.display = "block";
-    if (weatherBox && currentWeather) weatherBox.style.display = "block";
-  } else if (mode === "ask") {
+    panelAsk.style.display = "none";
+  } else {
     tabModeAsk.classList.add("active");
     tabModeAsk.setAttribute("aria-selected", "true");
+    tabModeDiagnose.classList.remove("active");
+    tabModeDiagnose.setAttribute("aria-selected", "false");
+    panelDiagnose.style.display = "none";
     panelAsk.style.display = "block";
-    if (soilResultsView) soilResultsView.style.display = "none";
-  } else if (mode === "soil") {
-    if (tabModeSoil) {
-      tabModeSoil.classList.add("active");
-      tabModeSoil.setAttribute("aria-selected", "true");
-    }
-    if (panelSoil) panelSoil.style.display = "block";
-    if (soilResultsView && lastSoilData) {
-      soilResultsView.style.display = "block";
-      if (diagnosisBanner) diagnosisBanner.style.display = "none";
-      if (weatherBox) weatherBox.style.display = "none";
-      if (qaAnswerBox) qaAnswerBox.style.display = "none";
-      if (followupCard) followupCard.style.display = "none";
-      document.getElementById("results-content").style.display = "block";
-      document.getElementById("empty-state").style.display = "none";
-    }
   }
 }
 
@@ -445,24 +367,6 @@ function setLanguage(lang) {
   document.getElementById("app-subtitle").textContent = t.appSubtitle;
   document.getElementById("txt-tab-diagnose").textContent = t.tabDiagnose;
   document.getElementById("txt-tab-ask").textContent = t.tabAsk;
-  if (document.getElementById("txt-tab-soil")) document.getElementById("txt-tab-soil").textContent = t.tabSoil;
-  if (document.getElementById("txt-soil-title")) document.getElementById("txt-soil-title").textContent = t.soilTitle;
-  if (document.getElementById("txt-soil-desc")) document.getElementById("txt-soil-desc").textContent = t.soilDesc;
-  if (document.getElementById("lbl-soil-loc")) document.getElementById("lbl-soil-loc").firstElementChild.textContent = t.lblSoilLoc;
-  if (document.getElementById("lbl-soil-crop")) document.getElementById("lbl-soil-crop").textContent = t.lblSoilCrop;
-  if (document.getElementById("txt-soil-notice")) document.getElementById("txt-soil-notice").textContent = t.txtSoilNotice;
-  if (document.getElementById("txt-btn-analyze-soil")) document.getElementById("txt-btn-analyze-soil").textContent = t.btnAnalyzeSoil;
-  if (document.getElementById("txt-soil-metrics-title")) document.getElementById("txt-soil-metrics-title").textContent = t.txtSoilMetricsTitle;
-  if (document.getElementById("txt-missing-title")) document.getElementById("txt-missing-title").textContent = t.txtMissingTitle;
-  if (document.getElementById("txt-missing-desc")) document.getElementById("txt-missing-desc").textContent = t.txtMissingDesc;
-  if (document.getElementById("txt-soil-overview-title")) document.getElementById("txt-soil-overview-title").textContent = t.txtSoilOverviewTitle;
-  if (document.getElementById("txt-soil-suitability-title")) document.getElementById("txt-soil-suitability-title").textContent = t.txtSoilSuitabilityTitle;
-  if (document.getElementById("txt-soil-recs-title")) document.getElementById("txt-soil-recs-title").textContent = t.txtSoilRecsTitle;
-  if (document.getElementById("txt-soil-amendments-title")) document.getElementById("txt-soil-amendments-title").textContent = t.txtSoilAmendmentsTitle;
-  if (document.getElementById("txt-soil-irrigation-title")) document.getElementById("txt-soil-irrigation-title").textContent = t.txtSoilIrrigationTitle;
-  if (document.getElementById("txt-soil-testing-title")) document.getElementById("txt-soil-testing-title").textContent = t.txtSoilTestingTitle;
-  if (document.getElementById("txt-limitations-title")) document.getElementById("txt-limitations-title").textContent = t.txtLimitationsTitle;
-  if (document.getElementById("txt-soil-sources-title")) document.getElementById("txt-soil-sources-title").textContent = t.txtSoilSourcesTitle;
   document.getElementById("txt-leaf-input").textContent = t.leafInput;
   document.getElementById("txt-dropzone-prompt").innerHTML = t.dropzonePrompt;
   document.getElementById("txt-dropzone-hint").textContent = t.dropzoneHint;
@@ -1013,106 +917,6 @@ function renderResults(data, options = {}) {
   weatherDetails.textContent = `Temp: ${w.temperature_c ?? 25}°C | Humidity: ${w.humidity_percentage ?? 60}% | ${w.condition ?? "Seasonal"}`;
   weatherRiskText.textContent = w.risk_analysis || "Standard seasonal precautions apply.";
 
-  // 3.5 Integrated Soil Health Context
-  const soilBox = document.getElementById("soil-context-box");
-  const soilDetails = document.getElementById("soil-ctx-details");
-  const soilGrid = document.getElementById("soil-ctx-grid");
-  const soilNote = document.getElementById("soil-ctx-note");
-  const blockSoilImpact = document.getElementById("block-soil-impact");
-  const guidanceSoilImpact = document.getElementById("guidance-soil-impact");
-
-  const s = data.soil || {};
-  const sp = s.soil_parameters || {};
-  const hasSoil = Boolean(s && Object.keys(sp).length > 0);
-
-  if (soilBox) {
-    if (hasSoil) {
-      soilBox.style.display = "block";
-      const loc = s.location || {};
-      const st = s.soil_type || {};
-      const isMr = currentLanguage === "marathi";
-
-      const locName = loc.resolved_name || loc.district || loc.query || "Field Location";
-      const soilTypeName = st.name || st.order || (isMr ? "स्थानिक काळी/चिकण माती" : "Regional Soil");
-      if (soilDetails) soilDetails.textContent = `${locName} | ${soilTypeName}`;
-
-      if (soilGrid) {
-        soilGrid.innerHTML = "";
-
-        // 1. Root Zone Soil Moisture
-        if (sp.soil_moisture_root_zone) {
-          const m = sp.soil_moisture_root_zone;
-          const chip = document.createElement("div");
-          chip.className = "soil-ctx-chip";
-          const isHigh = m.value > 0.35;
-          chip.innerHTML = `
-            <span class="label">${isMr ? "मुळांचा ओलावा (३-९ सेमी)" : "Root-Zone Moisture"}</span>
-            <span class="val">${m.value} ${m.unit}</span>
-            <span class="badge ${isHigh ? "badge-amber" : "badge-green"}">${m.interpretation || "Live"}</span>
-          `;
-          soilGrid.appendChild(chip);
-        }
-
-        // 2. Soil Surface Temperature
-        if (sp.soil_temperature_surface) {
-          const t = sp.soil_temperature_surface;
-          const chip = document.createElement("div");
-          chip.className = "soil-ctx-chip";
-          chip.innerHTML = `
-            <span class="label">${isMr ? "मातीचे तापमान (० सेमी)" : "Soil Temperature"}</span>
-            <span class="val">${t.value} ${t.unit}</span>
-            <span class="badge badge-green">${isMr ? "सक्रिय स्तर" : "Active Level"}</span>
-          `;
-          soilGrid.appendChild(chip);
-        }
-
-        // 3. Typical Regional pH
-        if (sp.soil_ph) {
-          const p = sp.soil_ph;
-          const chip = document.createElement("div");
-          chip.className = "soil-ctx-chip";
-          chip.innerHTML = `
-            <span class="label">${isMr ? "जमिनीचा सामू (pH)" : "Typical Soil pH"}</span>
-            <span class="val">${p.value}</span>
-            <span class="badge badge-blue">${p.interpretation || "Regional"}</span>
-          `;
-          soilGrid.appendChild(chip);
-        }
-
-        // 4. Dominant Soil Order / Texture
-        if (st.order || st.texture) {
-          const chip = document.createElement("div");
-          chip.className = "soil-ctx-chip";
-          chip.innerHTML = `
-            <span class="label">${isMr ? "मातीचा प्रकार" : "Soil Order / Texture"}</span>
-            <span class="val">${st.order || "Vertisols"}</span>
-            <span class="badge badge-purple">${st.texture || "Clayey"}</span>
-          `;
-          soilGrid.appendChild(chip);
-        }
-      }
-
-      if (soilNote) {
-        soilNote.textContent = isMr
-          ? "⚠️ शेतातील प्रत्यक्ष नत्र, स्फुरद, पालाश (N-P-K) अचूक तपासणीसाठी जवळच्या कृषी विज्ञान केंद्रात (KVK) माती परीक्षण करून घ्या."
-          : "⚠️ Note: Exact available N-P-K (kg/ha) requires wet-chemistry soil test; consult local KVK or Soil Testing Lab.";
-      }
-    } else {
-      soilBox.style.display = "none";
-    }
-  }
-
-  // Soil & Moisture Impact Block
-  if (blockSoilImpact && guidanceSoilImpact) {
-    const soilInterp = (data.guidance && data.guidance.soil_interpretation) || "";
-    if (soilInterp) {
-      blockSoilImpact.style.display = "block";
-      guidanceSoilImpact.textContent = soilInterp;
-    } else {
-      blockSoilImpact.style.display = "none";
-    }
-  }
-
   // 4. Structured Guidance
   const g = data.guidance || {};
   guidanceExplanation.textContent = g.explanation || "Agricultural advisory analysis complete.";
@@ -1122,8 +926,7 @@ function renderResults(data, options = {}) {
   guidanceAdvisory.textContent = g.expert_advisory || "Consult your local KVK.";
 
   // Prepare full speech text
-  const soilSpeech = g.soil_interpretation ? ` ${g.soil_interpretation}. ` : "";
-  currentGuidanceText = `${data.crop || "Crop"} ${data.disease || ""}. ${directAnswerText ? directAnswerText + ". " : ""}${g.explanation || ""}. ${soilSpeech}${g.management_guidance || ""}`;
+  currentGuidanceText = `${data.crop || "Crop"} ${data.disease || ""}. ${directAnswerText ? directAnswerText + ". " : ""}${g.explanation || ""}. ${g.management_guidance || ""}`;
 
   // 5. Grad-CAM (Only in image diagnosis mode)
   if (!isStandalone && data.gradcam_base64) {
@@ -1157,175 +960,4 @@ function renderResults(data, options = {}) {
 
   // Scroll smoothly to results
   resultsContent.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-
-// ==============================================================================
-// SOIL HEALTH AGENT CONTROLLER & RENDERER
-// ==============================================================================
-function setupSoilSubmission() {
-  if (!btnAnalyzeSoil) return;
-
-  btnAnalyzeSoil.addEventListener("click", async () => {
-    const locVal = (soilLocationInput && soilLocationInput.value.trim()) || "Pune";
-
-    btnAnalyzeSoil.disabled = true;
-    if (soilSpinner) soilSpinner.style.display = "inline-block";
-    if (txtBtnAnalyzeSoil) txtBtnAnalyzeSoil.textContent = I18N[currentLanguage].btnAnalyzingSoil;
-
-    try {
-      const payload = {
-        location: locVal,
-        crop: selectedSoilCrop || null,
-        language: currentLanguage,
-      };
-
-      const response = await fetch(`${API_BASE}/soil-health`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.detail || `Server returned HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      lastSoilData = data;
-      renderSoilResults(data);
-    } catch (error) {
-      handleBackendConnectionError(error, "Soil Health Analysis");
-    } finally {
-      btnAnalyzeSoil.disabled = false;
-      if (soilSpinner) soilSpinner.style.display = "none";
-      if (txtBtnAnalyzeSoil) txtBtnAnalyzeSoil.textContent = I18N[currentLanguage].btnAnalyzeSoil;
-    }
-  });
-}
-
-function renderSoilResults(data) {
-  const emptyState = document.getElementById("empty-state");
-  const resultsContent = document.getElementById("results-content");
-
-  if (emptyState) emptyState.style.display = "none";
-  if (resultsContent) resultsContent.style.display = "block";
-
-  // Hide leaf diagnosis-specific cards
-  if (diagnosisBanner) diagnosisBanner.style.display = "none";
-  if (weatherBox) weatherBox.style.display = "none";
-  if (qaAnswerBox) qaAnswerBox.style.display = "none";
-  if (gradcamBox) gradcamBox.style.display = "none";
-  if (followupCard) followupCard.style.display = "none";
-
-  // Show Soil Results View
-  if (soilResultsView) soilResultsView.style.display = "block";
-
-  // 1. Header & Location Banner
-  const loc = data.location || {};
-  document.getElementById("res-soil-type").textContent = data.soil_type || "Regional Agricultural Soil";
-  document.getElementById("res-soil-location").textContent = `📍 ${loc.resolved_name || loc.district || 'Pune'}`;
-
-  const scopeBadge = document.getElementById("soil-scope-badge");
-  if (scopeBadge) {
-    scopeBadge.textContent = (data.data_quality?.overall_classification || "REGIONAL_ESTIMATE").toUpperCase().replace("_", " ");
-  }
-
-  // Moisture badge
-  const moistVal = data.soil_parameters?.soil_moisture?.value;
-  const moistEl = document.getElementById("res-moist-val");
-  if (moistEl) {
-    moistEl.textContent = moistVal !== undefined && moistVal !== null ? `${moistVal}%` : "N/A";
-  }
-
-  // 2. Metrics Grid
-  const gridEl = document.getElementById("soil-metrics-grid");
-  if (gridEl) {
-    gridEl.innerHTML = "";
-    const params = data.soil_parameters || {};
-    for (const [key, p] of Object.entries(params)) {
-      if (key === "soil_type") continue; // Shown prominently in header
-
-      const card = document.createElement("div");
-      card.className = "soil-param-card";
-
-      const cat = (p.data_category || "estimate").toLowerCase();
-      const tagClass = cat.includes("measured") ? "tag-measured" : (cat.includes("unavailable") ? "tag-unavailable" : "tag-estimate");
-
-      card.innerHTML = `
-        <div class="param-card-header">
-          <span class="param-card-title">${p.display_name || key}</span>
-          <span class="param-category-tag ${tagClass}">${cat.replace("_", " ")}</span>
-        </div>
-        <div class="param-card-val">${p.value !== null && p.value !== undefined ? `${p.value} ${p.unit || ''}` : 'Not Available'}</div>
-        ${p.depth ? `<div class="param-card-depth">Layer: ${p.depth}</div>` : ''}
-        <div class="param-card-interp">${p.interpretation || 'No interpretation available.'}</div>
-      `;
-      gridEl.appendChild(card);
-    }
-  }
-
-  // 3. Missing Parameters List
-  const missingList = document.getElementById("soil-missing-list");
-  if (missingList) {
-    missingList.innerHTML = "";
-    const unavails = data.data_quality?.unavailable_parameters || [];
-    unavails.forEach((param) => {
-      const li = document.createElement("li");
-      li.textContent = `❌ ${param.replace(/_/g, " ")}`;
-      missingList.appendChild(li);
-    });
-  }
-
-  // 4. Guidance Text
-  const g = data.guidance || {};
-  document.getElementById("res-soil-overview").textContent = g.soil_condition_overview || g.summary || "No overview available.";
-  document.getElementById("res-soil-suitability").textContent = g.crop_suitability || "Suitable for regional cultivation with proper management.";
-
-  const recsList = document.getElementById("res-soil-recs");
-  if (recsList) {
-    recsList.innerHTML = "";
-    (g.recommendations || []).forEach((r) => {
-      const li = document.createElement("li");
-      li.textContent = r;
-      recsList.appendChild(li);
-    });
-  }
-
-  const amendList = document.getElementById("res-soil-amendments");
-  if (amendList) {
-    amendList.innerHTML = "";
-    (g.organic_amendments || []).forEach((a) => {
-      const li = document.createElement("li");
-      li.textContent = a;
-      amendList.appendChild(li);
-    });
-  }
-
-  document.getElementById("res-soil-irrigation").textContent = g.irrigation_advice || "Maintain uniform field capacity.";
-  document.getElementById("res-soil-testing").textContent = g.soil_testing_advice || "Submit a composite field soil sample to your nearest Krishi Vigyan Kendra (KVK).";
-  document.getElementById("res-soil-limitations").textContent = g.limitations_notice || "Regional estimates cannot replace a certified lab soil test.";
-
-  // 5. Sources List
-  const sourcesEl = document.getElementById("soil-sources-list");
-  if (sourcesEl) {
-    sourcesEl.innerHTML = "";
-    (data.sources || []).forEach((s) => {
-      const item = document.createElement("div");
-      item.className = "soil-source-item";
-      item.innerHTML = `
-        <div>
-          <div class="soil-source-name">${s.source_name}</div>
-          <div class="soil-source-org">${s.organization} (${s.spatial_resolution})</div>
-        </div>
-        <span class="param-category-tag tag-measured">${s.retrieval_status}</span>
-      `;
-      sourcesEl.appendChild(item);
-    });
-  }
-
-  // Scroll to results
-  if (window.innerWidth < 1024) {
-    resultsContent.scrollIntoView({ behavior: "smooth" });
-  }
 }

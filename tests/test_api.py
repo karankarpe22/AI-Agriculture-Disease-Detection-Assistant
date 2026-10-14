@@ -20,7 +20,6 @@ def test_health_endpoint():
     assert data["status"] == "healthy"
     assert data["num_classes"] == 13
     assert data["rag_ready"] is True
-    assert data["soil_agent_ready"] is True
 
 
 def test_weather_endpoint():
@@ -67,7 +66,7 @@ def test_predict_rejects_dark_image():
 
 
 def test_ask_endpoint_followup():
-    """Test follow-up question mode with active crop, disease, weather, and soil context."""
+    """Test follow-up question mode with active crop and disease context."""
     payload = {
         "crop": "Tomato",
         "disease": "Early blight",
@@ -84,10 +83,8 @@ def test_ask_endpoint_followup():
     assert data["disease"] == "Early blight"
     assert "direct_answer" in data
     assert len(data["direct_answer"]) > 10
-    assert "weather" in data
-    assert "soil" in data
     assert "guidance" in data
-    assert "soil_interpretation" in data["guidance"]
+    assert "evidence" in data
 
 
 def test_ask_endpoint_standalone():
@@ -105,42 +102,7 @@ def test_ask_endpoint_standalone():
     assert data["success"] is True
     assert "direct_answer" in data
     assert len(data["direct_answer"]) > 10
-    assert "weather" in data
-    assert "soil" in data
     assert "guidance" in data
-
-
-def test_analyze_endpoint_integrates_soil_weather_question():
-    """Test end-to-end /analyze pipeline integrating Image + Weather + Soil + Question + Gemini."""
-    test_dir = Path("data/test/Tomato_healthy")
-    sample_files = list(test_dir.glob("*.JPG")) + list(test_dir.glob("*.jpg"))
-    if not sample_files:
-        pytest.skip("No sample images found")
-
-    with open(sample_files[0], "rb") as f:
-        response = client.post(
-            "/analyze",
-            files={"image": ("sample_leaf.jpg", f, "image/jpeg")},
-            data={
-                "location": "Kolhapur",
-                "question": "How often should I water my tomato crop in this soil?",
-                "language": "english",
-                "include_gradcam": "false",
-            },
-        )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert data["crop"] == "Tomato"
-    assert "weather" in data
-    assert "soil" in data
-    assert data["soil"] is not None
-    assert "soil_parameters" in data["soil"]
-    assert "guidance" in data
-    assert "soil_interpretation" in data["guidance"]
-    assert len(data["guidance"]["soil_interpretation"]) > 10
-    assert "direct_answer" in data
-    assert len(data["direct_answer"]) > 10
 
 
 def test_tts_endpoint():
@@ -148,25 +110,8 @@ def test_tts_endpoint():
         "/tts",
         data={"text": "Hello farmer, this is a health test.", "language": "english"},
     )
+    # Accepts 200 when online or 500 when external network drops
     assert response.status_code in [200, 500]
     if response.status_code == 200:
         assert response.headers["content-type"] == "audio/mpeg"
         assert len(response.content) > 1000
-
-
-def test_soil_health_endpoint():
-    payload = {
-        "location": "Pune",
-        "crop": "Tomato",
-        "language": "english",
-    }
-    response = client.post("/soil-health", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] in ["success", "partial"]
-    assert data["location"]["district"].lower() == "pune"
-    assert "soil_parameters" in data
-    assert "guidance" in data
-    assert len(data["guidance"]["recommendations"]) > 0
-    assert "data_quality" in data
-    assert len(data["data_quality"]["limitations"]) > 0

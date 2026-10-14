@@ -174,12 +174,9 @@ Stage 2: Fine-Tuning Upper Layers (Phase 3)
 * **Phase 2 (Head Training):** The backbone is completely frozen (`requires_grad = False`). The randomly initialized linear head (`nn.Linear(1024, 13)`) is trained with AdamW ($LR = 10^{-3}$) for 3 epochs. This aligns output weights without destroying pretrained feature detectors.
 * **Phase 3 (Fine-Tuning):** The top 3 Inverted Residual blocks are unfrozen. Training proceeds for 2 epochs using a gentle learning rate ($LR = 10^{-4}$ with `CosineAnnealingLR` decaying to $10^{-6}$).
 * **Empirical Validation:**
-  * Validation accuracy increased from **74.77% $
-ightarrow$ 83.54%** (+8.77% gain).
-  * Validation loss dropped from **0.8105 $
-ightarrow$ 0.5702** (29.6% error reduction).
-  * Training loss dropped from **0.3312 $
-ightarrow$ 0.0628** (5.3x lower error).
+  * Validation accuracy increased from **74.77% $ightarrow$ 83.54%** (+8.77% gain).
+  * Validation loss dropped from **0.8105 $ightarrow$ 0.5702** (29.6% error reduction).
+  * Training loss dropped from **0.3312 $ightarrow$ 0.0628** (5.3x lower error).
   * Test set precision reached **86.99%** with an average CPU inference latency of **21.5 ms**.
 
 #### 4. Visual Saliency via Grad-CAM
@@ -187,8 +184,7 @@ To guarantee model interpretability and farmer trust, Gradient-weighted Class Ac
 1. Compute the gradient of the winning class logit $y^c$ with respect to feature activation maps $A^k$:
    $$lpha_k^c = rac{1}{Z} \sum_{i=1}^{U} \sum_{j=1}^{V} rac{\partial y^c}{\partial A_{ij}^k}$$
 2. Weight activations and apply ReLU to isolate features positively contributing to the diagnosis:
-   $$L_{	ext{Grad-CAM}}^c = 	ext{ReLU}\left(\sum_{k} lpha_k^c A^k
-ight)$$
+   $$L_{	ext{Grad-CAM}}^c = 	ext{ReLU}\left(\sum_{k} lpha_k^c A^kight)$$
 3. The normalized heatmap is upsampled to $224 	imes 224$ and superimposed as a jet-colormap over the leaf image, visually verifying that the CNN looked at the actual fungal lesions rather than background soil.
 
 ---
@@ -293,16 +289,11 @@ If internet access is completely absent in the field, the system activates an of
 * **Agricultural Text Normalization (`_clean_for_speech`):**
   * Strips Markdown formatting (`*`, `#`, `•`).
   * Expands abbreviations into spoken language:
-    * `°C` $
-ightarrow$ *"degrees Celsius"* / *"अंश सेल्सिअस"*
-    * `g/L` $
-ightarrow$ *"grams per liter"* / *"ग्रॅम प्रति लिटर"*
-    * `ml/L` $
-ightarrow$ *"milliliters per liter"* / *"मिली प्रति लिटर"*
-    * `WP @ 2.5` $
-ightarrow$ *"wettable powder at 2.5"* / *"डब्ल्यूपी अडीच प्रमाणे"*
-    * `ICAR` $
-ightarrow$ *"I.C.A.R."* / *"आयसीएआर"*
+    * `°C` $ightarrow$ *"degrees Celsius"* / *"अंश सेल्सिअस"*
+    * `g/L` $ightarrow$ *"grams per liter"* / *"ग्रॅम प्रति लिटर"*
+    * `ml/L` $ightarrow$ *"milliliters per liter"* / *"मिली प्रति लिटर"*
+    * `WP @ 2.5` $ightarrow$ *"wettable powder at 2.5"* / *"डब्ल्यूपी अडीच प्रमाणे"*
+    * `ICAR` $ightarrow$ *"I.C.A.R."* / *"आयसीएआर"*
 * **Sub-2ms Disk Cache:** Input speech text is hashed via MD5 and cached as MP3 in `outputs/audio_cache/`. Repeated playback loads in **$< 2	ext{ ms}$** with zero bandwidth consumption.
 
 ---
@@ -392,8 +383,7 @@ sequenceDiagram
 | **RAG Retrieval** | `src/rag/vector_store.py` | Dense vector indexing, semantic search, ICAR chunk retrieval | FAISS, sentence-transformers, MiniLM |
 | **Knowledge Base** | `knowledge_base/*.md` | Curated pathology guidelines, chemical dosages, cultural controls | Markdown, ICAR Publications |
 | **Microclimate** | `src/weather/weather_service.py` | Live meteorological telemetry ingestion, fungal/bacterial risk modeling | Open-Meteo REST API, OpenWeatherMap |
-| **Generative LLM** | `src/gemini/guidance_service.py` | Multi-model cascading (`flash-lite` $
-ightarrow$ `3.6-flash`), offline intent matcher | Google Gemini API, Regex, Python |
+| **Generative LLM** | `src/gemini/guidance_service.py` | Multi-model cascading (`flash-lite` $ightarrow$ `3.6-flash`), offline intent matcher | Google Gemini API, Regex, Python |
 | **Neural Speech** | `src/utils/voice_service.py` | Spoken text normalization, Azure Neural speech synthesis, MD5 disk cache | `edge-tts`, asyncio, hashlib |
 | **Client Interface**| `frontend/index.html`, `app.js`, `styles.css` | Tabbed dual-mode interface, audio playback, mic voice input | HTML5, Vanilla JavaScript, CSS3 |
 
@@ -421,69 +411,3 @@ All architectural components have been validated with automated test suites (`te
 2. **Deterministic Grounding:** The LLM is strictly constrained by a FAISS vector store containing official ICAR research chunks, eliminating hallucinated chemical recommendations.
 3. **Resilient Cascading:** Free-tier rate limits and network outages are mitigated via a 4-tier model cascade and a 100% offline semantic intent matcher.
 4. **Rural-First Engineering:** Accessibility is built into the core architecture via real-time microclimate epidemiology, native Marathi/English language toggles, and conversational human-like neural voice delivery.
-
-### Subsystem 8: Autonomous Soil Health Intelligence Layer (`src/soil/`)
-
-```text
-               +----------------------------------+
-               | User Location & Optional Crop    |
-               | (Village/Town, District, State)  |
-               +----------------------------------+
-                                |
-                                v
-               +----------------------------------+
-               | Location Resolution & Geocoding  |
-               +----------------------------------+
-                                |
-        +-----------------------+-----------------------+
-        |                       |                       |
-        v                       v                       v
-+-------------------+   +-------------------+   +-------------------+
-|  Open-Meteo Land  |   |   ISRIC SoilGrids |   |  ICAR-NBSS&LUP    |
-|   Surface Model   |   |   250m REST API   |   | District Database |
-| (Live Root Zone   |   | (Texture, Bulk    |   | (Benchmark Series,|
-| Moisture & Temp)  |   |  Density, SOC)    |   | Dominant Orders)  |
-| [location_measured|   | [regional_estimate|   | [regional_estimate|
-+-------------------+   +-------------------+   +-------------------+
-        |                       |                       |
-        +-----------------------+-----------------------+
-                                |
-                                v
-               +----------------------------------+
-               | Normalization & Agronomic Quality|
-               | (Crop Thresholds: Tomato/Potato) |
-               | (Explicit Missing N-P-K Flags)   |
-               +----------------------------------+
-                                |
-        +-----------------------+-----------------------+
-        |                                               |
-        v                                               v
-+-----------------------+                       +-------------------+
-| Agricultural RAG KB   |                       | Live Weather Context
-| (Soil Management Docs)|                       | (Air Temp, Humidity)
-+-----------------------+                       +-------------------+
-        |                                               |
-        +-----------------------+-----------------------+
-                                |
-                                v
-               +----------------------------------+
-               | Google Gemini Generative Model   |
-               | (Strict Fact-Evidence Synthesis) |
-               +----------------------------------+
-                                |
-                                v
-               +----------------------------------+
-               | English / Marathi Soil Guidance  |
-               | (Actionable Practices & Limits)  |
-               +----------------------------------+
-```
-
-#### Core Components & Responsibilities
-1. **Zero-Friction Location Input**: Takes village, district, state from the farmer; resolves coordinates via Open-Meteo geocoding without requiring complex laboratory metrics.
-2. **Multi-Source Fallback Registry (`src/soil/soil_data_sources.py`)**:
-   - `OpenMeteoSoilAdapter`: High-resolution root-zone (3-9cm) and surface (0-1cm) volumetric moisture plus temperature (`location_measured`).
-   - `ISRICSoilGridsAdapter`: Global gridded chemical/physical estimates (`regional_estimate`).
-   - `IndianSoilResourceAdapter`: Authoritative ICAR-NBSS&LUP soil order & Soil Health Card compendium (`regional_estimate`).
-3. **Strict Scientific Data Categorization**: Distinguishes `field_measured`, `location_measured`, `regional_estimate`, and `unavailable`. Never invents missing parameters.
-4. **Missing Parameters Audit**: Explicitly flags available Nitrogen ($N$), Phosphorus ($P$), and Potassium ($K$) as `unavailable` for remote queries, directing the farmer to accredited Soil Testing Labs (STL).
-5. **Crop-Specific Thresholds**: Agronomic benchmarks for Tomato, Potato, and Bell Pepper based on ICAR-IIHR, CPRI, and TNAU guidelines.

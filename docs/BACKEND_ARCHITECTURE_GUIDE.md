@@ -58,13 +58,7 @@ The backend is built as a **High-Performance Asynchronous Python Microservice** 
   * `GET /weather`: Fetches live weather for a city or GPS coordinates and calculates disease microclimate risk.
   * `POST /predict`: Lightweight endpoint executing quality checks and MobileNetV3 classification + Grad-CAM.
   * `POST /ask`: Conversational Q&A endpoint supporting both follow-ups on diagnosed crops and standalone farming questions.
-  * `POST /analyze`: Complete end-to-end pipeline (Upload $
-ightarrow$ Quality $
-ightarrow$ Vision $
-ightarrow$ Weather $
-ightarrow$ RAG $
-ightarrow$ Gemini $
-ightarrow$ Grad-CAM).
+  * `POST /analyze`: Complete end-to-end pipeline (Upload $ightarrow$ Quality $ightarrow$ Vision $ightarrow$ Weather $ightarrow$ RAG $ightarrow$ Gemini $ightarrow$ Grad-CAM).
   * `POST /tts`: Generates natural neural audio in English (`en-IN-NeerjaExpressiveNeural`) or Marathi (`mr-IN-AarohiNeural`).
 * **Optimizations**:
   * **Lifespan Startup Warm-Up**: Pre-loads PyTorch weights and FAISS indices into memory at boot time, eliminating cold-start latency.
@@ -119,10 +113,8 @@ abla^2 I) < 15.0$ (severely out of focus).
 * **Data Sources**: Queries **Open-Meteo** (live, free, global weather API) with automatic fallback to **OpenWeatherMap**.
 * **Risk Engine**:
   * Calculates disease escalation potential based on environmental thresholds:
-    * Relative humidity $> 75\%$ + warm temperature ($20	ext{--}28^\circ	ext{C}$) $
-ightarrow$ High fungal sporulation risk (e.g. Early/Late Blight).
-    * Frequent rain + leaf wetness $
-ightarrow$ High bacterial splash infection risk (e.g. Bacterial Spot).
+    * Relative humidity $> 75\%$ + warm temperature ($20	ext{--}28^\circ	ext{C}$) $ightarrow$ High fungal sporulation risk (e.g. Early/Late Blight).
+    * Frequent rain + leaf wetness $ightarrow$ High bacterial splash infection risk (e.g. Bacterial Spot).
 * **Caching**: In-memory 10-minute cache prevents redundant external network requests for the same locality.
 
 ---
@@ -147,30 +139,9 @@ ightarrow$ High bacterial splash infection risk (e.g. Bacterial Spot).
   * Marathi (India): `mr-IN-AarohiNeural` (authentic native Marathi articulation).
 * **Spoken Text Normalizer**:
   * Strips markdown formatting (`*`, `#`, `•`).
-  * Expands agricultural technical notations: `°C` $
-ightarrow$ *"degrees Celsius"*, `g/L` $
-ightarrow$ *"grams per liter"*, `%` $
-ightarrow$ *"percent"*, `@` $
-ightarrow$ *"at"*, `ICAR` $
-ightarrow$ *"I.C.A.R."*.
+  * Expands agricultural technical notations: `°C` $ightarrow$ *"degrees Celsius"*, `g/L` $ightarrow$ *"grams per liter"*, `%` $ightarrow$ *"percent"*, `@` $ightarrow$ *"at"*, `ICAR` $ightarrow$ *"I.C.A.R."*.
 * **Sub-2ms Disk Cache**:
   * Hashes input text using MD5 and saves synthesized audio in `outputs/audio_cache/`. Repeated playback loads instantaneously with zero network overhead.
-
----
-
-### Component 8: Autonomous Soil Health Agent Subsystem (`src/soil/`)
-* **Core Philosophy**: Most Indian smallholder farmers do not have immediate access to recent physical laboratory soil test reports. Demanding manual input of numbers like pH=6.4 or N=180 kg/ha creates an impossible barrier. The Soil Health Agent solves this by automatically querying authoritative geospatial and meteorological data sources using only the farmer's village, district, and state.
-* **Architecture (`src/soil/`)**:
-  * `soil_agent.py`: Central orchestrator coordinating location geocoding, multi-source queries, RAG retrieval, Gemini bilingual synthesis, and caching.
-  * `soil_data_sources.py`: Source registry with isolated source adapters:
-    1. `OpenMeteoSoilAdapter`: Land Surface Model fetching coordinate-level volumetric soil moisture at root-zone (3-9cm) and surface (0-1cm), plus soil temperatures. Classified strictly as `location_measured`.
-    2. `ISRICSoilGridsAdapter`: Global 250m gridded digital soil maps. Classified as `regional_estimate`.
-    3. `IndianSoilResourceAdapter`: Authoritative compendium of ICAR-NBSS&LUP benchmark soil orders (Vertisols, Inceptisols, Alfisols) and Soil Health Card macro-nutrient classifications for Maharashtra districts. Classified as `regional_estimate`.
-  * `soil_normalizer.py`: Standardizes units (e.g. converting SoilGrids pH*10 to standard pH, g/kg to %) and maps values to crop-specific agronomic suitability thresholds (Tomato, Potato, Bell Pepper).
-  * `soil_extractor.py`: Aggregates parameters with metadata provenance (source URL, spatial scope, retrieval time, data category) and explicitly compiles missing parameters.
-  * `soil_cache.py`: Thread-safe, disk-backed cache with configurable TTL (default 24h) preventing redundant external network requests.
-* **Scientific Data Integrity Gate**:
-  * Field-level available Nitrogen, Phosphorus, and Potassium (N, P, K kg/ha) cannot be measured from satellite or public web APIs. In accordance with strict scientific ethics, the system **never invents or hallucinates** these values. They are explicitly marked `unavailable` with advice to visit the nearest Krishi Vigyan Kendra (KVK).
 
 ---
 
@@ -201,9 +172,3 @@ ightarrow$ *"I.C.A.R."*.
 
 ### Q4: "What happens if the farmer's field has no internet or Google Gemini is down?"
 > **Answer**: *"The backend is architected with dual-layer resilience. If Gemini returns 429 or is unreachable, the system automatically falls back to our grounded RAG formatter and semantic intent parser, generating comprehensive, medically sound ICAR advice in English or Marathi completely offline."*
-
-### Q5: "How does the Soil Health Agent work without requiring farmers to manually type soil test numbers?"
-> **Answer**: *"We designed an automated multi-source pipeline. When a farmer selects or inputs their district (e.g., Pune, Nashik, Kolhapur), the agent geocodes the location and queries Open-Meteo's Land Surface Model for live root-zone volumetric moisture and soil temperature, combined with ICAR-NBSS&LUP benchmark soil series for Maharashtra. The agent normalizes these values against crop-specific agronomic thresholds, retrieves nutrient management guides from our FAISS RAG index, and prompts Gemini to produce bilingual actionable advice."*
-
-### Q6: "Why doesn't your system predict exact N-P-K numbers or calculate exact chemical fertilizer dosages from the internet?"
-> **Answer**: *"In agricultural science, predicting field-level available N, P, K in kg/ha from satellite or remote APIs without direct wet-chemistry lab testing of a physical soil sample is scientifically invalid and dangerous to crops. Doing so could cause fertilizer burn or severe nutrient deficiency. Our system enforces scientific integrity: public data is strictly categorized as 'regional_estimate' or 'location_measured', and missing parameters (like available N-P-K) are explicitly reported as 'Not Available', guiding the farmer to their nearest Soil Testing Laboratory (STL) or KVK."*

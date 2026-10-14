@@ -54,7 +54,7 @@
         <div class="mode-tabs" role="tablist">
           <button type="button" class="mode-tab active" id="tab-mode-diagnose" role="tab" aria-selected="true">
             <span class="tab-icon">🌿</span>
-            <span id="txt-tab-diagnose">Crop Health Diagnosis</span>
+            <span id="txt-tab-diagnose">Leaf Diagnosis</span>
           </button>
           <button type="button" class="mode-tab" id="tab-mode-ask" role="tab" aria-selected="false">
             <span class="tab-icon">💬</span>
@@ -217,7 +217,7 @@
           </button>
         </div>
 
-        </section>
+      </section>
 
       <!-- Right Column: Results Section -->
       <section class="card results-card" aria-labelledby="results-heading">
@@ -298,26 +298,6 @@
             <p class="weather-risk-text" id="weather-risk-text">High humidity favors foliar fungal spore dispersal.</p>
           </div>
 
-          <!-- Integrated Soil Health Conditions Card -->
-          <div class="soil-context-box" id="soil-context-box" style="display: none;">
-            <div class="soil-context-header">
-              <span class="soil-icon">🌱</span>
-              <div>
-                <strong id="soil-ctx-title">Live Soil & Moisture Conditions</strong>
-                <div class="soil-ctx-details" id="soil-ctx-details">Loading soil intelligence...</div>
-              </div>
-            </div>
-            <div class="soil-ctx-grid" id="soil-ctx-grid">
-              <!-- Dynamically populated parameters -->
-            </div>
-            <div class="soil-ctx-missing">
-              <span class="missing-chip-title" id="txt-missing-tag">Field-Test Needed:</span>
-              <span class="missing-chip">Available N-P-K (kg/ha)</span>
-              <span class="missing-chip">Electrical Conductivity</span>
-            </div>
-            <p class="soil-ctx-note" id="soil-ctx-note"></p>
-          </div>
-
           <!-- Audio Read Aloud Player for Full Advisory -->
           <div class="audio-banner" id="audio-banner">
             <button type="button" class="btn-audio" id="tts-btn">
@@ -333,11 +313,6 @@
               <h4 class="block-title"><span class="icon">📖</span> <span id="txt-explanation-title">Explanation</span>
               </h4>
               <p class="block-content" id="guidance-explanation"></p>
-            </div>
-
-            <div class="guidance-block" id="block-soil-impact" style="display: none;">
-              <h4 class="block-title"><span class="icon">🪴</span> <span id="txt-soil-impact-title">Soil & Moisture Interaction</span></h4>
-              <p class="block-content" id="guidance-soil-impact"></p>
             </div>
 
             <div class="guidance-block highlight-block">
