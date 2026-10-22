@@ -1,6 +1,6 @@
 # AI Agriculture Assistant (कृषी सहाय्यक)
 
-An academically grounded, evidence-based agricultural decision support system designed for 3rd-year engineering research. It integrates **MobileNetV3-Large** for transfer-learning-based crop disease classification, a **FAISS-grounded RAG (Retrieval-Augmented Generation)** knowledge layer from ICAR publications, **real-time weather risk analysis**, and **Google Gemini** generative advisory in **English and Marathi**.
+An academically grounded, evidence-based agricultural decision support system . It integrates **MobileNetV3-Large** for transfer-learning-based crop disease classification, a **FAISS-grounded RAG (Retrieval-Augmented Generation)** knowledge layer from ICAR publications, **real-time weather risk analysis**, and **Google Gemini** generative advisory in **English and Marathi**.
 
 ---
 
@@ -270,4 +270,4 @@ For in-depth engineering documentation, architecture diagrams, technical specifi
 | :--- | :--- |
 | **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)** | Complete multi-tier system architecture, component boundaries, and end-to-end data flow diagrams. |
 | **[docs/BACKEND_ARCHITECTURE_GUIDE.md](docs/BACKEND_ARCHITECTURE_GUIDE.md)** | Viva defense guide explaining every backend component, image quality checks, transfer learning, and RAG. |
-| **[docs/FLOWCHART.md](docs/FLOWCHART.md)** | Visual Mermaid and text flowcharts representing the complete application pipeline. |
+| **[docs/FLOWCHART.md](docs/FLOWCHART.md)** | Visual Mermaid and text flowcharts representing the complete application pipeline.|
