@@ -91,12 +91,12 @@
           <div class="form-group samples-group">
             <label class="form-label" id="lbl-samples">🧪 Test with Sample Leaf:</label>
             <div class="sample-pills">
-              <button type="button" class="sample-pill" data-src="/data/samples/sample_tomato_early_blight.jpg"
-                data-name="Tomato Early Blight">🍅 Early Blight</button>
-              <button type="button" class="sample-pill" data-src="/data/samples/sample_potato_late_blight.jpg"
-                data-name="Potato Late Blight">🥔 Late Blight</button>
-              <button type="button" class="sample-pill" data-src="/data/samples/sample_bell_pepper_bacterial_spot.jpg"
-                data-name="Bell Pepper Bacterial Spot">🫑 Bacterial Spot</button>
+              <button type="button" class="sample-pill" id="sample-pill-early" data-src="/data/samples/sample_tomato_early_blight.jpg"
+                data-name="Tomato Early Blight" data-label-en="🍅 Early Blight" data-label-mr="🍅 लवकर करपा">🍅 Early Blight</button>
+              <button type="button" class="sample-pill" id="sample-pill-late" data-src="/data/samples/sample_potato_late_blight.jpg"
+                data-name="Potato Late Blight" data-label-en="🥔 Late Blight" data-label-mr="🥔 उशिरा करपा">🥔 Late Blight</button>
+              <button type="button" class="sample-pill" id="sample-pill-bact" data-src="/data/samples/sample_bell_pepper_bacterial_spot.jpg"
+                data-name="Bell Pepper Bacterial Spot" data-label-en="🫑 Bacterial Spot" data-label-mr="🫑 जिवाणू ठिपके">🫑 Bacterial Spot</button>
             </div>
           </div>
 
@@ -108,11 +108,11 @@
             <div class="input-with-chips">
               <input type="text" id="location-input" class="text-input" placeholder="e.g. Pune, Nashik, Kolhapur"
                 value="Pune">
-              <div class="quick-chips">
-                <button type="button" class="chip" data-val="Pune">Pune</button>
-                <button type="button" class="chip" data-val="Nashik">Nashik</button>
-                <button type="button" class="chip" data-val="Nagpur">Nagpur</button>
-                <button type="button" class="chip" data-val="Solapur">Solapur</button>
+              <div class="quick-chips" id="loc-quick-chips">
+                <button type="button" class="chip loc-chip" data-val="Pune" data-label-en="Pune" data-label-mr="पुणे">Pune</button>
+                <button type="button" class="chip loc-chip" data-val="Nashik" data-label-en="Nashik" data-label-mr="नाशिक">Nashik</button>
+                <button type="button" class="chip loc-chip" data-val="Nagpur" data-label-en="Nagpur" data-label-mr="नागपूर">Nagpur</button>
+                <button type="button" class="chip loc-chip" data-val="Solapur" data-label-en="Solapur" data-label-mr="सोलापूर">Solapur</button>
               </div>
             </div>
           </div>
@@ -168,10 +168,10 @@
           <div class="form-group">
             <label class="form-label" id="lbl-crop-context">🌱 Crop Category:</label>
             <div class="crop-context-chips" id="crop-context-chips">
-              <button type="button" class="chip crop-chip active" data-crop="">All / General</button>
-              <button type="button" class="chip crop-chip" data-crop="Tomato">🍅 Tomato</button>
-              <button type="button" class="chip crop-chip" data-crop="Potato">🥔 Potato</button>
-              <button type="button" class="chip crop-chip" data-crop="Bell pepper">🫑 Bell Pepper</button>
+              <button type="button" class="chip crop-chip active" data-crop="" data-label-en="All / General" data-label-mr="सर्व पिके">All / General</button>
+              <button type="button" class="chip crop-chip" data-crop="Tomato" data-label-en="🍅 Tomato" data-label-mr="🍅 टोमॅटो">🍅 Tomato</button>
+              <button type="button" class="chip crop-chip" data-crop="Potato" data-label-en="🥔 Potato" data-label-mr="🥔 बटाटा">🥔 Potato</button>
+              <button type="button" class="chip crop-chip" data-crop="Bell pepper" data-label-en="🫑 Bell Pepper" data-label-mr="🫑 ढोबळी मिरची">🫑 Bell Pepper</button>
             </div>
           </div>
 
@@ -199,14 +199,25 @@
             </div>
             <div class="quick-chips standalone-q-chips">
               <button type="button" class="chip sq-chip"
-                data-q="What is the best fertilizer schedule for tomato before flowering?">Tomato fertilizer?</button>
+                data-q="What is the best fertilizer schedule for tomato before flowering?"
+                data-q-mr="फुलोऱ्यापूर्वी टोमॅटोला खतांचे कोणते वेळापत्रक सर्वोत्तम आहे?"
+                data-label-en="Tomato fertilizer?"
+                data-label-mr="टोमॅटो खत व्यवस्थापन?">Tomato fertilizer?</button>
               <button type="button" class="chip sq-chip"
-                data-q="How to prevent potato blight during humid and overcast weather?">Potato blight
-                prevention?</button>
+                data-q="How to prevent potato blight during humid and overcast weather?"
+                data-q-mr="दमट आणि ढगाळ हवामानात बटाट्यावरील करपा कसा रोखावा?"
+                data-label-en="Potato blight prevention?"
+                data-label-mr="बटाटा करपा प्रतिबंध?">Potato blight prevention?</button>
               <button type="button" class="chip sq-chip"
-                data-q="Can I use organic neem oil for controlling aphids and thrips?">Organic neem spray?</button>
+                data-q="Can I use organic neem oil for controlling aphids and thrips?"
+                data-q-mr="मावा आणि फुलकिडे नियंत्रणासाठी सेंद्रिय कडुनिंब तेल वापरता येईल का?"
+                data-label-en="Organic neem spray?"
+                data-label-mr="सेंद्रिय कडुनिंब फवारणी?">Organic neem spray?</button>
               <button type="button" class="chip sq-chip"
-                data-q="What are the symptoms and cure of bacterial spot in capsicum?">Capsicum bacterial spot?</button>
+                data-q="What are the symptoms and cure of bacterial spot in capsicum?"
+                data-q-mr="ढोबळी मिरचीवरील जिवाणूजन्य ठिपके रोगाची लक्षणे व उपाय काय आहेत?"
+                data-label-en="Capsicum bacterial spot?"
+                data-label-mr="ढोबळी मिरची जिवाणू ठिपके?">Capsicum bacterial spot?</button>
             </div>
           </div>
 
@@ -370,14 +381,26 @@
             </div>
 
             <div class="quick-chips followup-chips">
-              <button type="button" class="chip follow-chip" data-q="Can I use organic neem oil for this?">Organic Neem
-                Oil?</button>
               <button type="button" class="chip follow-chip"
-                data-q="What is the waiting period before harvesting fruits?">Pre-harvest interval?</button>
-              <button type="button" class="chip follow-chip" data-q="When is the best time of day to spray?">Best spray
-                timing?</button>
-              <button type="button" class="chip follow-chip" data-q="How often should I repeat this spray?">Spray
-                frequency?</button>
+                data-q="Can I use organic neem oil for this?"
+                data-q-mr="यावर सेंद्रिय कडुनिंब तेलाची फवारणी चालेल का?"
+                data-label-en="Organic Neem Oil?"
+                data-label-mr="सेंद्रिय निंबोळी तेल?">Organic Neem Oil?</button>
+              <button type="button" class="chip follow-chip"
+                data-q="What is the waiting period before harvesting fruits?"
+                data-q-mr="फळे तोडणीपूर्वी किती दिवस प्रतीक्षा करावी (PHI काळ)?"
+                data-label-en="Pre-harvest interval?"
+                data-label-mr="तोडणी प्रतीक्षा काळ?">Pre-harvest interval?</button>
+              <button type="button" class="chip follow-chip"
+                data-q="When is the best time of day to spray?"
+                data-q-mr="फवारणी करण्यासाठी दिवसाची कोणती वेळ सर्वोत्तम आहे?"
+                data-label-en="Best spray timing?"
+                data-label-mr="फवारणीची योग्य वेळ?">Best spray timing?</button>
+              <button type="button" class="chip follow-chip"
+                data-q="How often should I repeat this spray?"
+                data-q-mr="ही फवारणी किती दिवसांच्या अंतराने पुन्हा करावी?"
+                data-label-en="Spray frequency?"
+                data-label-mr="फवारणीचे अंतर?">Spray frequency?</button>
             </div>
 
             <div class="followup-input-row">

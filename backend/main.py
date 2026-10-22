@@ -133,6 +133,99 @@ def validate_image_file(file: UploadFile, content: bytes) -> None:
         )
 
 
+
+# --- Comprehensive Multilingual Localization Tables ---
+CROP_TRANSLATIONS = {
+    "Potato": {"en": "Potato", "mr": "बटाटा"},
+    "Tomato": {"en": "Tomato", "mr": "टोमॅटो"},
+    "Pepper, bell": {"en": "Bell pepper", "mr": "ढोबळी मिरची"},
+    "Bell pepper": {"en": "Bell pepper", "mr": "ढोबळी मिरची"},
+    "General / Solanaceae": {"en": "General Crop", "mr": "सर्व पिके / शेती सल्ला"},
+    "General": {"en": "General Crop", "mr": "सर्व पिके / शेती सल्ला"},
+}
+
+DISEASE_TRANSLATIONS = {
+    "Early blight": {"en": "Early blight", "mr": "लवकर येणारा करपा (Early Blight)"},
+    "Late blight": {"en": "Late blight", "mr": "उशिरा येणारा करपा (Late Blight)"},
+    "Bacterial spot": {"en": "Bacterial spot", "mr": "जिवाणूजन्य ठिपके (Bacterial Spot)"},
+    "Leaf Mold": {"en": "Leaf Mold", "mr": "पानावरील बुरशी (Leaf Mold)"},
+    "Septoria leaf spot": {"en": "Septoria leaf spot", "mr": "सेप्टोरिया पानावरील ठिपके (Septoria Leaf Spot)"},
+    "Spider mites Two-spotted spider mite": {"en": "Two-spotted spider mite", "mr": "दोन ठिपक्यांची लाल कोळी (Spider Mites)"},
+    "Target Spot": {"en": "Target Spot", "mr": "लक्ष्य ठिपके (Target Spot)"},
+    "Tomato Yellow Leaf Curl Virus": {"en": "Yellow Leaf Curl Virus", "mr": "पिवळा चुरडा-मुरडा विषाणू (TYLCV)"},
+    "Tomato mosaic virus": {"en": "Tomato mosaic virus", "mr": "टोमॅटो मोझॅक विषाणू (Mosaic Virus)"},
+    "healthy": {"en": "Healthy Crop", "mr": "निरोगी पीक (Healthy)"},
+    "Healthy": {"en": "Healthy Crop", "mr": "निरोगी पीक (Healthy)"},
+    "General Agronomic Inquiry": {"en": "Expert Q&A Guidance", "mr": "कृषी तज्ज्ञ सल्ला व मार्गदर्शन"},
+}
+
+CITY_TRANSLATIONS_MR = {
+    "pune": "पुणे",
+    "akurdi": "आकुर्डी",
+    "nashik": "नाशिक",
+    "nagpur": "नागपूर",
+    "aurangabad": "छत्रपती संभाजीनगर",
+    "chhatrapati sambhajinagar": "छत्रपती संभाजीनगर",
+    "solapur": "सोलापूर",
+    "kolhapur": "कोल्हापूर",
+    "satara": "सातारा",
+    "sangli": "सांगली",
+    "jalgaon": "जळगाव",
+    "ahmednagar": "अहमदनगर",
+    "amravati": "अमरावती",
+    "nanded": "नांदेड",
+    "mumbai": "मुंबई",
+    "thane": "ठाणे",
+    "baramati": "बारामती",
+}
+
+WEATHER_CONDITIONS_MR = {
+    "clear": "स्वच्छ आकाश",
+    "sunny": "सूर्यप्रकाश",
+    "partly cloudy": "अंशतः ढगाळ",
+    "cloudy": "ढगाळ हवामान",
+    "overcast": "पूर्ण ढगाळ",
+    "rain": "पाऊस",
+    "light rain": "हलका पाऊस",
+    "moderate rain": "मध्यम पाऊस",
+    "heavy rain": "मुसळधार पाऊस",
+    "thunderstorm": "वादळी पाऊस",
+    "drizzle": "रिमझिम पाऊस",
+    "fog": "धुके",
+    "mist": "धुके",
+    "haze": "धूसर",
+    "normal": "सामान्य हवामान",
+    "seasonal": "हंगामी हवामान",
+}
+
+
+def localize_weather_data(weather: dict[str, Any]) -> dict[str, Any]:
+    """Enrich weather dictionary with Marathi localization fields."""
+    if not isinstance(weather, dict):
+        return weather
+    w = dict(weather)
+    loc = str(w.get("location", "")).lower()
+    city_mr = None
+    for k, v in CITY_TRANSLATIONS_MR.items():
+        if k in loc:
+            city_mr = f"{v}, भारत"
+            break
+    w["location_mr"] = city_mr or f"{w.get('location', 'शेत')}"
+
+    cond = str(w.get("condition", "")).lower()
+    w["condition_mr"] = WEATHER_CONDITIONS_MR.get(cond, WEATHER_CONDITIONS_MR.get(cond.strip(), w.get("condition", "हंगामी हवामान")))
+
+    risk = str(w.get("risk_analysis", ""))
+    hum = w.get("humidity_percentage", 60)
+    if "high humidity" in risk.lower() or "humidity" in risk.lower():
+        w["risk_analysis_mr"] = f"हवेतील जास्त आर्द्रता ({hum}%) बुरशीच्या बीजाणूंचा प्रसार वेगाने होण्यास अनुकूल आहे. शेतात पाण्याचा निचरा योग्य ठेवा."
+    elif "rain" in risk.lower():
+        w["risk_analysis_mr"] = "पावसाची शक्यता असल्याने फवारणी करताना स्टीकर (Sticker) वापरा किंवा पाऊस थांबल्यावर फवारा."
+    else:
+        w["risk_analysis_mr"] = "सध्याचे स्थानिक हवामान सामान्य असून नियमित निरीक्षण व प्रतिबंधात्मक काळजी ठेवा."
+    return w
+
+
 # --- Pydantic Request & Response Models ---
 class HealthResponse(BaseModel):
     status: str
@@ -143,6 +236,14 @@ class HealthResponse(BaseModel):
     rag_ready: bool
     gemini_ready: bool
     weather_provider: str
+
+
+
+class TranslateRequest(BaseModel):
+    text: str = Field(..., description="Text content to translate")
+    target_lang: str = Field(default="marathi", description="Target language ('marathi' or 'english')")
+    crop: str | None = None
+    disease: str | None = None
 
 
 class AskRequest(BaseModel):
@@ -310,19 +411,41 @@ async def ask_question(request: AskRequest):
         is_low_confidence=request.is_low_confidence,
     )
 
-    direct_answer = guidance.get("direct_answer", "")
+    crop_en = CROP_TRANSLATIONS.get(resolved_crop, {}).get("en", resolved_crop)
+    crop_mr = CROP_TRANSLATIONS.get(resolved_crop, {}).get("mr", resolved_crop)
+    disease_en = DISEASE_TRANSLATIONS.get(resolved_disease, {}).get("en", resolved_disease)
+    disease_mr = DISEASE_TRANSLATIONS.get(resolved_disease, {}).get("mr", resolved_disease)
+
+    guidance_en = guidance.get("en", guidance)
+    guidance_mr = guidance.get("mr", guidance)
+    direct_answer_en = guidance.get("direct_answer_en") or (guidance_en.get("direct_answer") if isinstance(guidance_en, dict) else "") or guidance.get("direct_answer", "")
+    direct_answer_mr = guidance.get("direct_answer_mr") or (guidance_mr.get("direct_answer") if isinstance(guidance_mr, dict) else "") or guidance.get("direct_answer", "")
+
+    localized_weather = localize_weather_data(weather_data)
+    is_mr = (request.language or "").lower() in ["marathi", "mr", "मराठी"]
+    final_crop = crop_mr if is_mr else crop_en
+    final_disease = disease_mr if is_mr else disease_en
+    final_direct_answer = direct_answer_mr if is_mr and direct_answer_mr else direct_answer_en
 
     return {
         "success": True,
-        "crop": resolved_crop,
-        "disease": resolved_disease,
+        "crop": final_crop,
+        "crop_en": crop_en,
+        "crop_mr": crop_mr,
+        "disease": final_disease,
+        "disease_en": disease_en,
+        "disease_mr": disease_mr,
         "confidence": request.confidence,
         "question": request.question,
-        "direct_answer": direct_answer,
-        "weather": weather_data,
+        "direct_answer": final_direct_answer,
+        "direct_answer_en": direct_answer_en,
+        "direct_answer_mr": direct_answer_mr,
+        "weather": localized_weather,
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,
+        "guidance_en": guidance_en,
+        "guidance_mr": guidance_mr,
     }
 
 
@@ -424,26 +547,95 @@ async def analyze_leaf(
         except Exception as e:
             logger.warning(f"Grad-CAM error: {e}")
 
-    direct_answer = guidance.get("direct_answer", "")
+    crop_en = CROP_TRANSLATIONS.get(crop, {}).get("en", crop)
+    crop_mr = CROP_TRANSLATIONS.get(crop, {}).get("mr", crop)
+    disease_en = DISEASE_TRANSLATIONS.get(disease, {}).get("en", disease)
+    disease_mr = DISEASE_TRANSLATIONS.get(disease, {}).get("mr", disease)
+
+    guidance_en = guidance.get("en", guidance)
+    guidance_mr = guidance.get("mr", guidance)
+    direct_answer_en = guidance.get("direct_answer_en") or (guidance_en.get("direct_answer") if isinstance(guidance_en, dict) else "") or guidance.get("direct_answer", "")
+    direct_answer_mr = guidance.get("direct_answer_mr") or (guidance_mr.get("direct_answer") if isinstance(guidance_mr, dict) else "") or guidance.get("direct_answer", "")
+
+    localized_weather = localize_weather_data(weather_data)
+    is_mr = (language or "").lower() in ["marathi", "mr", "मराठी"]
+    final_crop = crop_mr if is_mr else crop_en
+    final_disease = disease_mr if is_mr else disease_en
+    final_direct_answer = direct_answer_mr if is_mr and direct_answer_mr else direct_answer_en
+
     return {
         "success": True,
         "quality": pred_result.get("quality"),
-        "crop": crop,
-        "disease": disease,
+        "crop": final_crop,
+        "crop_en": crop_en,
+        "crop_mr": crop_mr,
+        "disease": final_disease,
+        "disease_en": disease_en,
+        "disease_mr": disease_mr,
         "raw_class": pred_result.get("raw_class"),
         "confidence": confidence,
         "confidence_percentage": pred_result.get("confidence_percentage"),
         "is_low_confidence": is_low_confidence,
         "warning": pred_result.get("warning"),
         "top_predictions": pred_result.get("top_predictions", []),
-        "weather": weather_data,
+        "weather": localized_weather,
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,
-        "direct_answer": direct_answer,
+        "guidance_en": guidance_en,
+        "guidance_mr": guidance_mr,
+        "direct_answer": final_direct_answer,
+        "direct_answer_en": direct_answer_en,
+        "direct_answer_mr": direct_answer_mr,
         "farmer_question": question,
         "gradcam_base64": gradcam_base64,
     }
+
+
+
+@app.post("/translate")
+async def translate_text(request: TranslateRequest):
+    """Translate arbitrary agricultural text or questions between English and Marathi."""
+    text = (request.text or "").strip()
+    target_lang = (request.target_lang or "marathi").lower().strip()
+    if not text:
+        return {"success": True, "translated_text": ""}
+
+    is_to_marathi = target_lang in ["marathi", "mr", "मराठी"]
+
+    # 1. Quick phrase dictionary lookup for common agronomic follow-ups
+    phrase_map_mr = {
+        "can i use organic neem oil for this?": "यावर सेंद्रिय कडुनिंब तेलाची फवारणी करता येईल का?",
+        "what is the waiting period before harvesting fruits?": "फळे किंवा कंद काढणीपूर्वी किती दिवस प्रतीक्षा करावी (PHI काळ)?",
+        "when is the best time of day to spray?": "फवारणी करण्यासाठी दिवसाची कोणती वेळ सर्वोत्तम आहे?",
+        "how often should i repeat this spray?": "ही फवारणी किती दिवसांच्या अंतराने पुन्हा करावी?",
+        "what care should be taken to prevent this disease": "हा रोग रोखण्यासाठी काय काळजी घ्यावी?",
+        "what spray should i use to treat this disease?": "या रोगावर नियंत्रणासाठी कोणती फवारणी करावी?",
+        "how can i prevent this in my other plants?": "इतर झाडांवर हा रोग पसरू नये म्हणून काय करावे?",
+        "is this disease dangerous for fruit harvest?": "हा रोग फळांच्या उत्पादनासाठी किती घातक आहे?",
+    }
+    phrase_map_en = {v: k for k, v in phrase_map_mr.items()}
+
+    lower_text = text.lower().strip(" ?.")
+    for k, v in (phrase_map_mr if is_to_marathi else phrase_map_en).items():
+        if k.strip(" ?.") in lower_text or lower_text in k.strip(" ?."):
+            return {"success": True, "translated_text": v, "method": "dictionary"}
+
+    # 2. Try Gemini translation if client is available
+    gemini = get_gemini_service()
+    client = gemini._get_client()
+    if client:
+        try:
+            target_desc = "authentic spoken Marathi for a farmer in Maharashtra" if is_to_marathi else "clear, simple English"
+            prompt = f"Translate the following agricultural query or advice accurately into {target_desc}. Do not add extra chatter, return only the direct translation:\n\n{text}"
+            response = await run_in_threadpool(client.models.generate_content, model="gemini-2.5-flash", contents=prompt)
+            tr_text = response.text.strip()
+            return {"success": True, "translated_text": tr_text, "method": "gemini"}
+        except Exception as e:
+            logger.warning(f"Gemini translation fallback: {e}")
+
+    # 3. Heuristic translation fallback
+    return {"success": True, "translated_text": text, "method": "original"}
 
 
 @app.post("/tts")

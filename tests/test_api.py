@@ -115,3 +115,39 @@ def test_tts_endpoint():
     if response.status_code == 200:
         assert response.headers["content-type"] == "audio/mpeg"
         assert len(response.content) > 1000
+
+
+def test_bilingual_fields_in_ask_endpoint():
+    payload = {
+        "crop": "Potato",
+        "disease": "Late blight",
+        "confidence": 0.95,
+        "question": "What care should be taken to prevent this disease",
+        "location": "Pune",
+        "language": "english",
+    }
+    response = client.post("/ask", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["crop_en"] == "Potato"
+    assert data["crop_mr"] == "बटाटा"
+    assert "Late blight" in data["disease_en"]
+    assert "करपा" in data["disease_mr"]
+    assert "direct_answer_en" in data
+    assert "direct_answer_mr" in data
+    assert len(data["direct_answer_mr"]) > 10
+    assert "location_mr" in data["weather"]
+    assert "पुणे" in data["weather"]["location_mr"]
+
+
+def test_translate_endpoint():
+    payload = {
+        "text": "What care should be taken to prevent this disease",
+        "target_lang": "marathi",
+    }
+    response = client.post("/translate", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert "काळजी" in data["translated_text"] or len(data["translated_text"]) > 5

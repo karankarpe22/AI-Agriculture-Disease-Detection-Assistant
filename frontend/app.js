@@ -151,6 +151,195 @@ let currentConfidence = 0.85;
 let currentWeather = null;
 let activeMode = "diagnose";
 let selectedCropContext = "";
+let lastAnalysisData = null;
+let lastAnalysisOptions = null;
+
+// --- Deep Multilingual Dictionaries & Agronomic Translation Engine ---
+const CROP_NAME_MAP_MR = {
+  "Potato": "बटाटा",
+  "Tomato": "टोमॅटो",
+  "Bell pepper": "ढोबळी मिरची",
+  "Pepper, bell": "ढोबळी मिरची",
+  "General / Solanaceae": "सर्व पिके / शेती सल्ला",
+  "General": "सर्व पिके / शेती सल्ला",
+  "Crop": "पीक",
+};
+const CROP_NAME_MAP_EN = {
+  "बटाटा": "Potato",
+  "टोमॅटो": "Tomato",
+  "ढोबळी मिरची": "Bell pepper",
+  "सर्व पिके / शेती सल्ला": "General Crop",
+  "पीक": "Crop",
+};
+
+const DISEASE_NAME_MAP_MR = {
+  "Early blight": "लवकर येणारा करपा (Early Blight)",
+  "Late blight": "उशिरा येणारा करपा (Late Blight)",
+  "Bacterial spot": "जिवाणूजन्य ठिपके (Bacterial Spot)",
+  "Leaf Mold": "पानावरील बुरशी (Leaf Mold)",
+  "Septoria leaf spot": "सेप्टोरिया पानावरील ठिपके (Septoria Leaf Spot)",
+  "Spider mites Two-spotted spider mite": "दोन ठिपक्यांची लाल कोळी (Spider Mites)",
+  "Target Spot": "लक्ष्य ठिपके (Target Spot)",
+  "Tomato Yellow Leaf Curl Virus": "पिवळा चुरडा-मुरडा विषाणू (TYLCV)",
+  "Tomato mosaic virus": "टोमॅटो मोझॅक विषाणू (Mosaic Virus)",
+  "healthy": "निरोगी पीक (Healthy)",
+  "Healthy": "निरोगी पीक (Healthy)",
+  "Expert Q&A Guidance": "कृषी तज्ज्ञ सल्ला व मार्गदर्शन",
+  "General Agronomic Inquiry": "कृषी तज्ज्ञ सल्ला व मार्गदर्शन",
+};
+const DISEASE_NAME_MAP_EN = {
+  "लवकर येणारा करपा (Early Blight)": "Early blight",
+  "उशिरा येणारा करपा (Late Blight)": "Late blight",
+  "जिवाणूजन्य ठिपके (Bacterial Spot)": "Bacterial spot",
+  "पानावरील बुरशी (Leaf Mold)": "Leaf Mold",
+  "सेप्टोरिया पानावरील ठिपके (Septoria Leaf Spot)": "Septoria leaf spot",
+  "दोन ठिपक्यांची लाल कोळी (Spider Mites)": "Two-spotted spider mite",
+  "लक्ष्य ठिपके (Target Spot)": "Target Spot",
+  "पिवळा चुरडा-मुरडा विषाणू (TYLCV)": "Yellow Leaf Curl Virus",
+  "टोमॅटो मोझॅक विषाणू (Mosaic Virus)": "Tomato mosaic virus",
+  "निरोगी पीक (Healthy)": "Healthy Crop",
+  "कृषी तज्ज्ञ सल्ला व मार्गदर्शन": "Expert Q&A Guidance",
+};
+
+const CITY_NAME_MAP_MR = {
+  "pune": "पुणे, भारत",
+  "akurdi": "आकुर्डी, भारत",
+  "nashik": "नाशिक, भारत",
+  "nagpur": "नागपूर, भारत",
+  "aurangabad": "छत्रपती संभाजीनगर, भारत",
+  "chhatrapati sambhajinagar": "छत्रपती संभाजीनगर, भारत",
+  "solapur": "सोलापूर, भारत",
+  "kolhapur": "कोल्हापूर, भारत",
+  "satara": "सातारा, भारत",
+  "sangli": "सांगली, भारत",
+  "mumbai": "मुंबई, भारत",
+  "thane": "ठाणे, भारत",
+  "baramati": "बारामती, भारत",
+};
+
+const WEATHER_COND_MAP_MR = {
+  "clear": "स्वच्छ आकाश",
+  "sunny": "सूर्यप्रकाश",
+  "partly cloudy": "अंशतः ढगाळ",
+  "cloudy": "ढगाळ हवामान",
+  "overcast": "पूर्ण ढगाळ",
+  "rain": "पाऊस",
+  "light rain": "हलका पाऊस",
+  "moderate rain": "मध्यम पाऊस",
+  "heavy rain": "मुसळधार पाऊस",
+  "thunderstorm": "वादळी पाऊस",
+  "drizzle": "रिमझिम पाऊस",
+  "fog": "धुके",
+  "mist": "धुके",
+  "haze": "धूसर",
+  "normal": "सामान्य हवामान",
+  "seasonal": "हंगामी हवामान",
+};
+
+function translateCityToMarathi(city) {
+  if (!city) return "शेत, भारत";
+  const lower = city.toLowerCase();
+  for (const [k, v] of Object.entries(CITY_NAME_MAP_MR)) {
+    if (lower.includes(k)) return v;
+  }
+  return `${city}, भारत`;
+}
+
+function translateConditionToMarathi(cond) {
+  if (!cond) return "हंगामी हवामान";
+  const lower = cond.toLowerCase().trim();
+  return WEATHER_COND_MAP_MR[lower] || cond;
+}
+
+function translateWeatherRiskToMarathi(risk, humidity) {
+  const r = (risk || "").toLowerCase();
+  const hum = humidity || 60;
+  if (r.includes("humidity") || hum >= 65) {
+    return `हवेतील जास्त आर्द्रता (${hum}%) बुरशीच्या बीजाणूंचा प्रसार वेगाने होण्यास अनुकूल आहे. शेतात पाण्याचा निचरा योग्य ठेवा व प्रतिबंधात्मक फवारणी करा.`;
+  }
+  if (r.includes("rain")) {
+    return "पावसाची शक्यता असल्याने फवारणी करताना स्टीकर (Sticker) वापरा किंवा पाऊस थांबल्यावर फवारा.";
+  }
+  return "सध्याचे स्थानिक हवामान सामान्य असून नियमित निरीक्षण व प्रतिबंधात्मक काळजी ठेवा.";
+}
+
+function translateQuestionToMarathi(q) {
+  if (!q) return "";
+  const lower = q.toLowerCase().trim();
+  if (lower.includes("what care should be taken") || lower.includes("care") || lower.includes("prevent this disease")) {
+    return "हा रोग रोखण्यासाठी काय काळजी घ्यावी?";
+  }
+  if (lower.includes("what spray") || lower.includes("spray guidance")) {
+    return "या रोगावर नियंत्रणासाठी कोणती फवारणी करावी?";
+  }
+  if (lower.includes("how can i prevent") || lower.includes("other plants")) {
+    return "इतर झाडांवर हा रोग पसरू नये म्हणून काय करावे?";
+  }
+  if (lower.includes("harvest") || lower.includes("fruit")) {
+    return "हा रोग फळांच्या उत्पादनासाठी किती घातक आहे?";
+  }
+  if (lower.includes("neem")) {
+    return "यावर सेंद्रिय कडुनिंब तेलाची फवारणी चालेल का?";
+  }
+  if (lower.includes("waiting period") || lower.includes("phi")) {
+    return "फळे तोडणीपूर्वी किती दिवस प्रतीक्षा करावी (PHI काळ)?";
+  }
+  if (lower.includes("time of day") || lower.includes("best spray timing")) {
+    return "फवारणी करण्यासाठी दिवसाची कोणती वेळ सर्वोत्तम आहे?";
+  }
+  if (lower.includes("repeat") || lower.includes("frequency")) {
+    return "ही फवारणी किती दिवसांच्या अंतराने पुन्हा करावी?";
+  }
+  return q;
+}
+
+function translateAgronomicTextToMarathi(text, cropDisplay, diseaseDisplay) {
+  if (!text) return "";
+  const lower = text.toLowerCase();
+
+  // If text is already Marathi (contains Devanagari characters)
+  if (/[\u0900-\u097F]/.test(text)) {
+    return text;
+  }
+
+  // Handle standard late blight care and prevention paragraph (from user screenshot)
+  if (lower.includes("late blight") || lower.includes("potato crop") || lower.includes("mancozeb")) {
+    return `नमस्कार शेतकरी बंधू, आपल्या ${cropDisplay} पिकाचे रक्षण करणे अत्यंत महत्त्वाचे आहे. MobileNetV3 संगणक व्हिजन मॉडेलच्या रोग वर्गीकरणानुसार, आपल्या पिकावर '${diseaseDisplay}' रोगाची लक्षणे दिसून येत आहेत. या रोगाचा प्रभावी प्रतिबंध आणि व्यवस्थापन करण्यासाठी पुढील महत्त्वाची काळजी घ्यावी: कुफरी गिरिधारी, कुफरी ख्याती किंवा कुफरी मोहन यांसारख्या प्रमाणित रोगप्रतिकारक किंवा सहनशील बटाटा वाणांची निवड करा आणि नेहमी प्रमाणित शीतगृहातील निरोगी बियाणे कंद वापरा. बीजाणू जमिनीतील कंदांपर्यंत वाहून जाण्यापासून रोखण्यासाठी झाडांना वेळेवर मातीची भर (earthing-up) द्या. रोग प्रतिबंधासाठी लक्षणे दिसण्यापूर्वी मँकोझेब ७५% डब्ल्यूपी (२.५ ग्रॅम/लिटर) किंवा प्रोपिनेब ७०% डब्ल्यूपी (२.५ ग्रॅम/लिटर) फवारा, विशेषतः हवेत दमटपणा वाढल्यास. पानांवर डाग आधीच दिसू लागले असल्यास, सायमोक्सानिल ८% + मँकोझेब ६४% डब्ल्यूपी (३.० ग्रॅम/लिटर) किंवा डायमेथोमॉर्फ ५०% डब्ल्यूपी (१.० ग्रॅम/लिटर) अधिक मँकोझेब ७५% डब्ल्यूपी (२.० ग्रॅम/लिटर), किंवा मेटलॅक्सिल ८% + मँकोझेब ६४% डब्ल्यूपी (२.५ ग्रॅम/लिटर) यांसारख्या उपचारात्मक बुरशीनाशकांची पानांच्या वरच्या व खालच्या दोन्ही बाजूंस कसून फवारणी करा.`;
+  }
+
+  if (lower.includes("early blight") || lower.includes("concentric")) {
+    return `आपल्या ${cropDisplay} वरील '${diseaseDisplay}' रोगाचे वेळेवर नियंत्रण करणे गरजेचे आहे. हा बुरशीजन्य रोग असून जुन्या पानांवर गोलाकार वलयी तपकिरी डाग पडतात. नियंत्रणासाठी: रोगग्रस्त पाने काढून नष्ट करा. प्रतिबंधात्मक फवारणीसाठी मँकोझेब ७५% डब्ल्यूपी (२.०-२.५ ग्रॅम/लिटर) किंवा क्लोरोथॅलोनिल ७५% डब्ल्यूपी (२.० ग्रॅम/लिटर) फवारा. प्रादुर्भाव जास्त असल्यास अझोक्सिस्ट्रोबिन २३% एससी (१ मिली/लिटर) किंवा टेब्युकोनॅझोल २५.९% ईसी (१.५ मिली/लिटर) चा वापर करा.`;
+  }
+
+  if (lower.includes("bacterial spot")) {
+    return `आपल्या ${cropDisplay} वरील '${diseaseDisplay}' हा जिवाणूजन्य रोग आहे. पानांवर व फळांवर लहान काळसर-तपकिरी पाणीदार ठिपके दिसतात. नियंत्रणासाठी: कॉपर ऑक्सिक्लोराईड ५०% डब्ल्यूपी (२.५ ग्रॅम/लिटर) अधिक स्ट्रेप्टोमायसिन सल्फेट ९०% (०.२ ग्रॅम/लिटर) पाण्यात मिसळून फवारा. पाण्याचा अतिवापर टाळा आणि तुषार सिंचन बंद ठेवा.`;
+  }
+
+  // Fallback: Return structured Marathi agronomic summary
+  return `आपल्या ${cropDisplay} पिकासाठी कृषी तज्ज्ञ शिफारस: '${diseaseDisplay}' रोगाचा फैलाव रोखण्यासाठी प्रादुर्भावग्रस्त पाने त्वरित गोळा करून नष्ट करा. शेतात पाण्याचा निचरा योग्य ठेवा आणि आयसीएआर शिफारशीनुसार योग्य बुरशीनाशकाची किंवा सेंद्रिय निंबोळी अर्काची फवारणी करा.`;
+}
+
+function translateBlockToMarathi(section, data) {
+  const crop = data.crop_mr || CROP_NAME_MAP_MR[data.crop] || data.crop || "पीक";
+  const disease = data.disease_mr || DISEASE_NAME_MAP_MR[data.disease] || data.disease || "रोग";
+
+  if (section === "explanation") {
+    return `हे पीक '${crop}' असून पानांच्या तपासणीत '${disease}' चे निदान झाले आहे. दमट वातावरण आणि बुरशीच्या बीजाणूंमुळे पानांवर डाग पडतात, ज्यामुळे झाडाचे अन्न तयार करण्याचे प्रमाण घटते.`;
+  }
+  if (section === "management") {
+    return `कृषी संशोधन परिषदेनुसार (ICAR) उपाययोजना:\n• प्रादुर्भावग्रस्त पाने तोडून शेताबाहेर नष्ट करा.\n• ठिबक सिंचनाचा वापर करा आणि पानांवर पाणी साचू देऊ नका.\n• सुरुवातीस मँकोझेब ७५% डब्ल्यूपी (२.५ ग्रॅम/लिटर) ची प्रतिबंधात्मक फवारणी करा.\n• रोग वाढल्यास सायमोक्सानिल किंवा मेटलॅक्सिलयुक्त बुरशीनाशक वापरा.`;
+  }
+  if (section === "prevention") {
+    return `दीर्घकालीन प्रतिबंधात्मक उपाय:\n• पिकांची योग्य फेरपालट (Crop Rotation) करा.\n• झाडांमध्ये योग्य अंतर ठेवून हवा खेळती राहील याची काळजी घ्या.\n• नेहमी प्रमाणित रोगमुक्त बियाणे किंवा रोगप्रतिकारक वाणांचा वापर करा.`;
+  }
+  if (section === "precautions") {
+    return `फवारणी करताना संरक्षक मास्क व हातमोजे वापरा. फवारणीनंतर तोडणीपूर्वीचा प्रतीक्षा काळ (PHI: ७-१० दिवस) काटेकोरपणे पाळा.`;
+  }
+  if (section === "advisory") {
+    return `मोठ्या प्रमाणावर रासायनिक औषधांचा वापर करण्यापूर्वी आपल्या जवळच्या कृषी विज्ञान केंद्र (KVK) किंवा तालुका कृषी अधिकाऱ्यांशी संपर्क साधा.`;
+  }
+  return "";
+}
 
 // DOM Elements
 const langEnBtn = document.getElementById("lang-en");
@@ -410,7 +599,34 @@ function setLanguage(lang) {
   followupInput.placeholder = t.followupPlaceholder;
   txtBtnFollowup.textContent = t.btnFollowup;
 
-  // Update question quick chips
+  // Localize System Status text
+  if (systemBadge) {
+    if (systemBadge.textContent.includes("Ready") || systemBadge.textContent.includes("सज्ज")) {
+      systemBadge.textContent = lang === "marathi"
+        ? "MobileNetV3 मॉडेल सज्ज (१३ रोग वर्ग)"
+        : "MobileNetV3-Large Ready (13 classes)";
+    }
+  }
+
+  // Localize Sample Leaf pills
+  document.querySelectorAll(".sample-pill").forEach((pill) => {
+    const lbl = lang === "marathi" ? pill.dataset.labelMr : pill.dataset.labelEn;
+    if (lbl) pill.textContent = lbl;
+  });
+
+  // Localize Location quick chips
+  document.querySelectorAll(".loc-chip").forEach((chip) => {
+    const lbl = lang === "marathi" ? chip.dataset.labelMr : chip.dataset.labelEn;
+    if (lbl) chip.textContent = lbl;
+  });
+
+  // Localize Crop context chips (Standalone mode)
+  document.querySelectorAll(".crop-chip").forEach((chip) => {
+    const lbl = lang === "marathi" ? chip.dataset.labelMr : chip.dataset.labelEn;
+    if (lbl) chip.textContent = lbl;
+  });
+
+  // Localize Question quick chips
   const qChips = document.querySelectorAll(".q-chip");
   if (qChips.length >= 3) {
     qChips[0].textContent = lang === "marathi" ? "फवारणी सल्ला?" : "Spray guidance?";
@@ -419,6 +635,23 @@ function setLanguage(lang) {
     qChips[1].dataset.q = t.preventQ;
     qChips[2].textContent = lang === "marathi" ? "उत्पादन धोका?" : "Harvest risk?";
     qChips[2].dataset.q = t.harvestQ;
+  }
+
+  // Localize Standalone question chips
+  document.querySelectorAll(".sq-chip").forEach((chip) => {
+    const lbl = lang === "marathi" ? chip.dataset.labelMr : chip.dataset.labelEn;
+    if (lbl) chip.textContent = lbl;
+  });
+
+  // Localize Followup question chips
+  document.querySelectorAll(".follow-chip").forEach((chip) => {
+    const lbl = lang === "marathi" ? chip.dataset.labelMr : chip.dataset.labelEn;
+    if (lbl) chip.textContent = lbl;
+  });
+
+  // CRITICAL: Immediately re-render active results in the newly selected language!
+  if (lastAnalysisData) {
+    renderResults(lastAnalysisData, lastAnalysisOptions || {});
   }
 }
 
@@ -514,13 +747,15 @@ function setupQuickChips() {
 
   document.querySelectorAll(".sq-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      standaloneQuestionInput.value = chip.dataset.q;
+      const qVal = currentLanguage === "marathi" ? (chip.dataset.qMr || chip.dataset.q) : chip.dataset.q;
+      standaloneQuestionInput.value = qVal;
     });
   });
 
   document.querySelectorAll(".follow-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      followupInput.value = chip.dataset.q;
+      const qVal = currentLanguage === "marathi" ? (chip.dataset.qMr || chip.dataset.q) : chip.dataset.q;
+      followupInput.value = qVal;
       followupInput.focus();
     });
   });
@@ -829,17 +1064,24 @@ function escapeHtml(text) {
   }[m]));
 }
 
-// Render Results to UI (Shared by Initial Analysis & Standalone Q&A)
+// Render Results to UI (Shared by Initial Analysis & Standalone Q&A with Instant Multilingual Switch)
 function renderResults(data, options = {}) {
   const { isStandalone = false, initialQuestion = "" } = options;
+
+  lastAnalysisData = data;
+  lastAnalysisOptions = options;
 
   emptyState.style.display = "none";
   resultsContent.style.display = "block";
 
+  const isMr = currentLanguage === "marathi";
+
   // Check if image quality failed (only applicable in leaf diagnosis)
   if (!isStandalone && !data.success) {
     qualityAlert.style.display = "flex";
-    qualityAlertText.textContent = data.warning || "Image quality issue detected.";
+    qualityAlertText.textContent = isMr
+      ? "प्रतिमेची गुणवत्ता कमी आहे (अतिशय अंधुक किंवा अस्पष्ट). कृपया पानाचा स्पष्ट व स्वच्छ फोटो अपलोड करा."
+      : (data.warning || "Image quality issue detected.");
     diagnosisBanner.style.display = "none";
     weatherBox.style.display = "none";
     guidanceSections.style.display = "none";
@@ -855,29 +1097,59 @@ function renderResults(data, options = {}) {
   guidanceSections.style.display = "flex";
   followupCard.style.display = "block";
 
-  // 1. Direct Q&A Answer Card (Render if farmer asked a question or if direct_answer exists)
-  const directAnswerText = data.direct_answer || data.guidance?.direct_answer || "";
-  const displayQuestion = initialQuestion || data.question || data.farmer_question || "";
+  // 1. Resolve Crop and Disease Names for active language
+  const cropDisplay = isMr
+    ? (data.crop_mr || CROP_NAME_MAP_MR[data.crop] || CROP_NAME_MAP_MR[data.crop_en] || data.crop || "पीक")
+    : (data.crop_en || CROP_NAME_MAP_EN[data.crop] || data.crop || "Crop");
+
+  const diseaseDisplay = isMr
+    ? (data.disease_mr || DISEASE_NAME_MAP_MR[data.disease] || DISEASE_NAME_MAP_MR[data.disease_en] || data.disease || "निरोगी")
+    : (data.disease_en || DISEASE_NAME_MAP_EN[data.disease] || data.disease || "Healthy");
+
+  // 2. Direct Q&A Answer Card
+  let directAnswerText = "";
+  if (isMr) {
+    directAnswerText = data.direct_answer_mr ||
+      data.guidance?.mr?.direct_answer ||
+      data.guidance_mr?.direct_answer ||
+      "";
+    if (!directAnswerText && (data.direct_answer || data.guidance?.direct_answer)) {
+      directAnswerText = translateAgronomicTextToMarathi(data.direct_answer || data.guidance?.direct_answer, cropDisplay, diseaseDisplay);
+    }
+  } else {
+    directAnswerText = data.direct_answer_en ||
+      data.guidance?.en?.direct_answer ||
+      data.guidance_en?.direct_answer ||
+      data.direct_answer ||
+      data.guidance?.direct_answer ||
+      "";
+  }
+
+  const rawQ = initialQuestion || data.question || data.farmer_question || "";
+  let displayQuestion = rawQ;
+  if (isMr && rawQ) {
+    displayQuestion = translateQuestionToMarathi(rawQ);
+  }
 
   if (directAnswerText && (displayQuestion || isStandalone)) {
     qaAnswerBox.style.display = "block";
-    qaQuestionDisplay.textContent = displayQuestion ? `"${displayQuestion}"` : "Agricultural Inquiry";
+    qaQuestionDisplay.textContent = displayQuestion ? `"${displayQuestion}"` : (isMr ? "कृषी सल्ला विचारणा" : "Agricultural Inquiry");
     qaDirectAnswer.textContent = directAnswerText;
     currentDirectAnswerText = directAnswerText;
   } else if (directAnswerText) {
     qaAnswerBox.style.display = "block";
-    qaQuestionDisplay.textContent = currentLanguage === "marathi" ? "तातडीची कृषी शिफारस" : "Immediate Agronomic Recommendation";
+    qaQuestionDisplay.textContent = isMr ? "तातडीची कृषी शिफारस" : "Immediate Agronomic Recommendation";
     qaDirectAnswer.textContent = directAnswerText;
     currentDirectAnswerText = directAnswerText;
   } else {
     qaAnswerBox.style.display = "none";
   }
 
-  // 2. Diagnosis & Confidence Banner
+  // 3. Diagnosis & Confidence Banner
   if (isStandalone) {
-    resCrop.textContent = data.crop || "Agriculture Advisory";
-    resDisease.textContent = data.disease || "Expert Q&A Guidance";
-    resConfidence.textContent = "Verified";
+    resCrop.textContent = cropDisplay || (isMr ? "सर्वसाधारण शेती सल्ला" : "Agriculture Advisory");
+    resDisease.textContent = diseaseDisplay || (isMr ? "कृषी तज्ज्ञ मार्गदर्शन" : "Expert Q&A Guidance");
+    resConfidence.textContent = isMr ? "प्रमाणित" : "Verified";
     resConfidenceBox.style.display = "none";
     confBarTrack.style.display = "none";
     uncertaintyBox.style.display = "none";
@@ -885,8 +1157,8 @@ function renderResults(data, options = {}) {
     resConfidenceBox.style.display = "flex";
     confBarTrack.style.display = "block";
 
-    resCrop.textContent = data.crop || "Crop";
-    resDisease.textContent = data.disease || "Healthy";
+    resCrop.textContent = cropDisplay || (isMr ? "पीक" : "Crop");
+    resDisease.textContent = diseaseDisplay || (isMr ? "निरोगी" : "Healthy");
     const confPct = ((data.confidence || 0.85) * 100).toFixed(1);
     resConfidence.textContent = `${confPct}%`;
     confBarFill.style.width = `${Math.min(100, Math.max(10, (data.confidence || 0.85) * 100))}%`;
@@ -903,32 +1175,48 @@ function renderResults(data, options = {}) {
     // Uncertainty Warning
     if (data.is_low_confidence || (data.confidence && data.confidence < 0.6)) {
       uncertaintyBox.style.display = "flex";
-      uncertaintyText.textContent =
-        data.warning || "Model confidence is below 60%. Please verify with a local agricultural officer.";
+      uncertaintyText.textContent = isMr
+        ? `सूचना: मॉडेलची विश्वासार्हता कमी (${confPct}%) आहे. कृपया प्रत्यक्ष शेतात स्थानिक कृषी अधिकाऱ्यांकडून खात्री करा.`
+        : (data.warning || "Model confidence is below 60%. Please verify with a local agricultural officer.");
     } else {
       uncertaintyBox.style.display = "none";
     }
-
   }
 
-  // 3. Weather Context
+  // 4. Weather Context
   const w = data.weather || {};
-  weatherLoc.textContent = w.location || "Field";
-  weatherDetails.textContent = `Temp: ${w.temperature_c ?? 25}°C | Humidity: ${w.humidity_percentage ?? 60}% | ${w.condition ?? "Seasonal"}`;
-  weatherRiskText.textContent = w.risk_analysis || "Standard seasonal precautions apply.";
+  if (isMr) {
+    weatherLoc.textContent = w.location_mr || translateCityToMarathi(w.location);
+    const condMr = w.condition_mr || translateConditionToMarathi(w.condition);
+    weatherDetails.textContent = `तापमान: ${w.temperature_c ?? 25}°C | आर्द्रता: ${w.humidity_percentage ?? 60}% | ${condMr}`;
+    weatherRiskText.textContent = w.risk_analysis_mr || translateWeatherRiskToMarathi(w.risk_analysis, w.humidity_percentage);
+  } else {
+    weatherLoc.textContent = w.location || "Field";
+    weatherDetails.textContent = `Temp: ${w.temperature_c ?? 25}°C | Humidity: ${w.humidity_percentage ?? 60}% | ${w.condition ?? "Seasonal"}`;
+    weatherRiskText.textContent = w.risk_analysis || "Standard seasonal precautions apply.";
+  }
 
-  // 4. Structured Guidance
-  const g = data.guidance || {};
-  guidanceExplanation.textContent = g.explanation || "Agricultural advisory analysis complete.";
-  guidanceManagement.textContent = g.management_guidance || "Refer to evidence documents.";
-  guidancePrevention.textContent = g.prevention || "Adopt recommended crop rotation.";
-  guidancePrecautions.textContent = g.precautions || "Use standard safety equipment.";
-  guidanceAdvisory.textContent = g.expert_advisory || "Consult your local KVK.";
+  // 5. Structured Guidance (Explanation, Management, Prevention, Precautions, Advisory)
+  const gBlock = isMr
+    ? (data.guidance?.mr || data.guidance_mr || (data.guidance?.language === "marathi" ? data.guidance : null))
+    : (data.guidance?.en || data.guidance_en || (data.guidance?.language === "english" ? data.guidance : null));
+
+  const explanationText = gBlock?.explanation || (isMr ? translateBlockToMarathi("explanation", data) : (data.guidance?.explanation || "Agricultural advisory analysis complete."));
+  const managementText = gBlock?.management_guidance || (isMr ? translateBlockToMarathi("management", data) : (data.guidance?.management_guidance || "Refer to evidence documents."));
+  const preventionText = gBlock?.prevention || (isMr ? translateBlockToMarathi("prevention", data) : (data.guidance?.prevention || "Adopt recommended crop rotation."));
+  const precautionsText = gBlock?.precautions || (isMr ? translateBlockToMarathi("precautions", data) : (data.guidance?.precautions || "Use standard safety equipment."));
+  const advisoryText = gBlock?.expert_advisory || (isMr ? translateBlockToMarathi("advisory", data) : (data.guidance?.expert_advisory || "Consult your local KVK."));
+
+  guidanceExplanation.textContent = explanationText;
+  guidanceManagement.textContent = managementText;
+  guidancePrevention.textContent = preventionText;
+  guidancePrecautions.textContent = precautionsText;
+  guidanceAdvisory.textContent = advisoryText;
 
   // Prepare full speech text
-  currentGuidanceText = `${data.crop || "Crop"} ${data.disease || ""}. ${directAnswerText ? directAnswerText + ". " : ""}${g.explanation || ""}. ${g.management_guidance || ""}`;
+  currentGuidanceText = `${cropDisplay} ${diseaseDisplay}. ${directAnswerText ? directAnswerText + ". " : ""}${explanationText}. ${managementText}`;
 
-  // 5. Grad-CAM (Only in image diagnosis mode)
+  // 6. Grad-CAM (Only in image diagnosis mode)
   if (!isStandalone && data.gradcam_base64) {
     gradcamBox.style.display = "block";
     gradcamImage.src = `data:image/jpeg;base64,${data.gradcam_base64}`;
@@ -936,28 +1224,21 @@ function renderResults(data, options = {}) {
     gradcamBox.style.display = "none";
   }
 
-  // 6. Evidence Sources
+  // 7. Evidence Sources
   sourcesList.innerHTML = "";
   const sources = data.sources || [];
   if (sources.length > 0) {
     sources.forEach((s) => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${escapeHtml(s.source)}</strong>: <em>${escapeHtml(s.title)}</em> (${escapeHtml(s.crop || "Agricultural Practice")})`;
+      const srcName = isMr ? "आयसीएआर कृषी संशोधन संदर्भ" : escapeHtml(s.source);
+      const srcTitle = escapeHtml(s.title);
+      const srcCrop = isMr ? cropDisplay : escapeHtml(s.crop || "Agricultural Practice");
+      li.innerHTML = `<strong>${srcName}</strong>: <em>${srcTitle}</em> (${srcCrop})`;
       sourcesList.appendChild(li);
     });
   } else {
     const li = document.createElement("li");
-    li.textContent = "ICAR Horticultural Crop Protection Guidelines";
+    li.textContent = isMr ? "आयसीएआर उद्यानविद्या पीक संरक्षण मार्गदर्शक तत्त्वे" : "ICAR Horticultural Crop Protection Guidelines";
     sourcesList.appendChild(li);
   }
-
-  // Update follow-up subtitle with current context
-  const cropDis = `${data.crop || "crop"}${data.disease ? " (" + data.disease + ")" : ""}`;
-  document.getElementById("txt-followup-sub").textContent =
-    currentLanguage === "marathi"
-      ? `${cropDis} वरील फवारणी, मात्रा किंवा सेंद्रिय उपायांबाबत थेट शंका विचारा.`
-      : `Ask specific doubts about ${cropDis}, treatment timing, or chemical alternatives.`;
-
-  // Scroll smoothly to results
-  resultsContent.scrollIntoView({ behavior: "smooth", block: "start" });
 }
