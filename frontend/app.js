@@ -90,6 +90,22 @@ const I18N = {
     sprayQ: "What spray should I use to treat this disease?",
     preventQ: "How can I prevent this in my other plants?",
     harvestQ: "Is this disease dangerous for fruit harvest?",
+
+    secSummaryTitle: "1. Integrated Summary",
+    secDiseaseTitle: "2. Disease Explanation & Symptoms",
+    secWeatherTitle: "3. Weather Impact & Microclimate",
+    secSoilTitle: "4. Soil Health Impact",
+    secActionsTitle: "5. Recommended Actions",
+    secTreatmentTitle: "6. Treatment & Prevention",
+    secSafetyTitle: "7. Safety, Limitations & Expert Advisory",
+    curativeTitle: "Curative Treatment & Dosage",
+    preventiveTitle: "Preventive Measures & Hygiene",
+    precautionsTitle: "Chemical Safety & Precautions",
+    advisoryTitle: "Limitations & Expert Advisory (KVK)",
+    themeDark: "Dark",
+    themeLight: "Light",
+    themeToggleToDark: "Switch to dark mode",
+    themeToggleToLight: "Switch to light mode",
   },
   marathi: {
     appTitle: "कृषी सहाय्यक (AI Agriculture Assistant)",
@@ -155,6 +171,22 @@ const I18N = {
     sprayQ: "या रोगावर नियंत्रणासाठी कोणती फवारणी करावी?",
     preventQ: "इतर झाडांवर हा रोग पसरू नये म्हणून काय करावे?",
     harvestQ: "हा रोग फळांच्या उत्पादनासाठी किती घातक आहे?",
+
+    secSummaryTitle: "१. एकत्रित कृषी सारांश",
+    secDiseaseTitle: "२. रोग स्पष्टीकरण आणि लक्षणे",
+    secWeatherTitle: "३. हवामान प्रभाव आणि सूक्ष्म हवामान",
+    secSoilTitle: "४. मृदा आरोग्य प्रभाव",
+    secActionsTitle: "५. शिफारस केलेल्या कृती",
+    secTreatmentTitle: "६. उपचार आणि प्रतिबंध",
+    secSafetyTitle: "७. सुरक्षितता, मर्यादा आणि तज्ज्ञ सल्ला",
+    curativeTitle: "उपचारात्मक फवारणी आणि प्रमाण",
+    preventiveTitle: "प्रतिबंधात्मक उपाय आणि स्वच्छता",
+    precautionsTitle: "रासायनिक सुरक्षा आणि खबरदारी",
+    advisoryTitle: "मर्यादा आणि तज्ज्ञ सल्ला (केव्हीके)",
+    themeDark: "डार्क",
+    themeLight: "लाईट",
+    themeToggleToDark: "डार्क मोड निवडा",
+    themeToggleToLight: "लाईट मोड निवडा",
   },
 };
 
@@ -474,8 +506,66 @@ const followupThread = document.getElementById("followup-thread");
 
 const systemBadge = document.getElementById("system-status-text");
 
+// Theme State & Toggle Handling
+let currentTheme = "light";
+
+function setupThemeToggle() {
+  const themeToggle = document.getElementById("theme-toggle");
+
+  let savedTheme = "light";
+  try {
+    savedTheme = localStorage.getItem("agro_theme") || "light";
+  } catch (e) {}
+
+  setTheme(savedTheme);
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      setTheme(nextTheme);
+    });
+
+    themeToggle.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        setTheme(nextTheme);
+      }
+    });
+  }
+}
+
+function setTheme(theme) {
+  currentTheme = theme;
+  const isDark = theme === "dark";
+  document.documentElement.setAttribute("data-theme", theme);
+  try {
+    localStorage.setItem("agro_theme", theme);
+  } catch (e) {}
+
+  const themeIcon = document.getElementById("theme-icon");
+  const themeText = document.getElementById("theme-text");
+  const themeToggle = document.getElementById("theme-toggle");
+
+  if (themeIcon) themeIcon.textContent = isDark ? "☀️" : "🌙";
+  const isMr = currentLanguage === "marathi";
+  if (themeText) {
+    themeText.textContent = isDark
+      ? (isMr ? "लाईट" : "Light")
+      : (isMr ? "डार्क" : "Dark");
+  }
+  if (themeToggle) {
+    const label = isDark
+      ? (isMr ? "लाईट मोड निवडा" : "Switch to light mode")
+      : (isMr ? "डार्क मोड निवडा" : "Switch to dark mode");
+    themeToggle.setAttribute("aria-label", label);
+    themeToggle.title = label;
+  }
+}
+
 // Application Initialization
 document.addEventListener("DOMContentLoaded", () => {
+  setupThemeToggle();
   setupLanguageSwitcher();
   setupModeTabs();
   setupDropzone();
@@ -646,6 +736,23 @@ function setLanguage(lang) {
   if (lblSoilNpk) lblSoilNpk.textContent = t.lblSoilNpk;
   if (lblSoilCarbon) lblSoilCarbon.textContent = t.lblSoilCarbon;
   if (subSoilNpk) subSoilNpk.textContent = t.npkSub;
+
+  // Localize 7 Scannable Guidance Section Headings
+  const elSecDisease = document.getElementById("txt-sec-disease-title");
+  if (elSecDisease && t.secDiseaseTitle) elSecDisease.textContent = t.secDiseaseTitle;
+  const elSecWeather = document.getElementById("txt-sec-weather-title");
+  if (elSecWeather && t.secWeatherTitle) elSecWeather.textContent = t.secWeatherTitle;
+  const elSecSoil = document.getElementById("txt-sec-soil-title");
+  if (elSecSoil && t.secSoilTitle) elSecSoil.textContent = t.secSoilTitle;
+  const elSecActions = document.getElementById("txt-sec-actions-title");
+  if (elSecActions && t.secActionsTitle) elSecActions.textContent = t.secActionsTitle;
+  const elSecTreatment = document.getElementById("txt-sec-treatment-title");
+  if (elSecTreatment && t.secTreatmentTitle) elSecTreatment.textContent = t.secTreatmentTitle;
+  const elSecSafety = document.getElementById("txt-sec-safety-title");
+  if (elSecSafety && t.secSafetyTitle) elSecSafety.textContent = t.secSafetyTitle;
+
+  // Re-sync Theme Toggle label for active language
+  setTheme(currentTheme);
 
   document.getElementById("txt-followup-title").textContent = t.followupTitle;
   document.getElementById("txt-followup-sub").textContent = t.followupSub;
@@ -1076,7 +1183,7 @@ function setupFollowUpQA() {
           <span>🌿 ${currentLanguage === "marathi" ? "कृषी सल्ला" : "Agronomist Advisory"}</span>
           <button type="button" class="btn-mini-audio" id="${answerId}">🔊 ${I18N[currentLanguage].listenAnswer}</button>
         </div>
-        <div class="thread-ai-body">${escapeHtml(directAns)}</div>
+        <div class="thread-ai-body markdown-body">${renderMarkdown(directAns)}</div>
       `;
       followupThread.appendChild(aiBubble);
       aiBubble.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1115,6 +1222,143 @@ function escapeHtml(text) {
     '"': "&quot;",
     "'": "&#039;",
   }[m]));
+}
+
+/**
+ * Safely renders Markdown to HTML with strict sanitization against script and HTML injection.
+ * Integrates marked + DOMPurify when loaded, with a robust built-in parser for 100% offline resilience.
+ */
+function renderMarkdown(input) {
+  if (input == null) return "";
+  const text = String(input).trim();
+  if (!text) return "";
+
+  // 1. If marked + DOMPurify are loaded:
+  if (typeof window !== "undefined" && typeof window.marked !== "undefined" && typeof window.DOMPurify !== "undefined") {
+    try {
+      const rawHtml = window.marked.parse(text, { breaks: true, gfm: true });
+      return window.DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: [
+          "h1", "h2", "h3", "h4", "h5", "h6", "p", "br", "strong", "b",
+          "em", "i", "ul", "ol", "li", "code", "pre", "blockquote", "hr",
+          "span", "a"
+        ],
+        ALLOWED_ATTR: ["href", "target", "rel", "class", "title"]
+      });
+    } catch (e) {
+      console.warn("marked library error, using secure built-in parser:", e);
+    }
+  }
+
+  // 2. Built-in zero-dependency safe Markdown parser with complete entity escaping
+  return safeInternalMarkdown(text);
+}
+
+function safeInternalMarkdown(text) {
+  if (!text) return "";
+  // Escape raw HTML entities strictly to prevent XSS
+  let safe = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  safe = safe.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = safe.split("\n");
+  const output = [];
+  let inUl = false;
+  let inOl = false;
+
+  function closeLists() {
+    if (inUl) { output.push("</ul>"); inUl = false; }
+    if (inOl) { output.push("</ol>"); inOl = false; }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+
+    if (!line) {
+      closeLists();
+      continue;
+    }
+
+    // Headings (###, ##, #)
+    const h3Match = line.match(/^###\s+(.+)$/);
+    if (h3Match) {
+      closeLists();
+      output.push(`<h4>${parseInlineMarkdown(h3Match[1])}</h4>`);
+      continue;
+    }
+    const h2Match = line.match(/^##\s+(.+)$/);
+    if (h2Match) {
+      closeLists();
+      output.push(`<h3>${parseInlineMarkdown(h2Match[1])}</h3>`);
+      continue;
+    }
+    const h1Match = line.match(/^#\s+(.+)$/);
+    if (h1Match) {
+      closeLists();
+      output.push(`<h2>${parseInlineMarkdown(h1Match[1])}</h2>`);
+      continue;
+    }
+
+    // Horizontal Rule
+    if (/^(?:---|\*\*\*|___)$/.test(line)) {
+      closeLists();
+      output.push("<hr>");
+      continue;
+    }
+
+    // Blockquote
+    const bqMatch = line.match(/^>\s*(.+)$/);
+    if (bqMatch) {
+      closeLists();
+      output.push(`<blockquote>${parseInlineMarkdown(bqMatch[1])}</blockquote>`);
+      continue;
+    }
+
+    // Unordered List item (* or -)
+    const ulMatch = line.match(/^[-*•]\s+(.+)$/);
+    if (ulMatch) {
+      if (inOl) { output.push("</ol>"); inOl = false; }
+      if (!inUl) { output.push("<ul>"); inUl = true; }
+      output.push(`<li>${parseInlineMarkdown(ulMatch[1])}</li>`);
+      continue;
+    }
+
+    // Ordered List item (1., 2., etc.)
+    const olMatch = line.match(/^\d+[.)]\s+(.+)$/);
+    if (olMatch) {
+      if (inUl) { output.push("</ul>"); inUl = false; }
+      if (!inOl) { output.push("<ol>"); inOl = true; }
+      output.push(`<li>${parseInlineMarkdown(olMatch[1])}</li>`);
+      continue;
+    }
+
+    // Regular paragraph line
+    closeLists();
+    output.push(`<p>${parseInlineMarkdown(line)}</p>`);
+  }
+
+  closeLists();
+  return output.join("\n");
+}
+
+function parseInlineMarkdown(text) {
+  if (!text) return "";
+  return text
+    // Bold: **text** or __text__
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.+?)__/g, "<strong>$1</strong>")
+    // Italic: *text* or _text_
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>")
+    .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, "<em>$1</em>")
+    // Inline code: `code`
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    // Safe Links: only http/https allowed
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)\"\']+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 }
 
 // Render Results to UI (Shared by Initial Analysis & Standalone Q&A with Instant Multilingual Switch)
@@ -1186,19 +1430,29 @@ function renderResults(data, options = {}) {
     displayQuestion = translateQuestionToMarathi(rawQ);
   }
 
-  if (directAnswerText && (displayQuestion || isStandalone)) {
-    qaAnswerBox.style.display = "block";
-    qaQuestionDisplay.textContent = displayQuestion ? `"${displayQuestion}"` : (isMr ? "कृषी सल्ला विचारणा" : "Agricultural Inquiry");
-    qaDirectAnswer.textContent = directAnswerText;
-    currentDirectAnswerText = directAnswerText;
-  } else if (directAnswerText) {
-    qaAnswerBox.style.display = "block";
-    qaQuestionDisplay.textContent = isMr ? "तातडीची कृषी शिफारस" : "Immediate Agronomic Recommendation";
-    qaDirectAnswer.textContent = directAnswerText;
-    currentDirectAnswerText = directAnswerText;
-  } else {
-    qaAnswerBox.style.display = "none";
+  // If directAnswerText is absent (leaf diagnosis without custom question), synthesize integrated summary:
+  const confPct = ((data.confidence || 0.85) * 100).toFixed(1);
+  if (!directAnswerText) {
+    if (isMr) {
+      directAnswerText = `**${cropDisplay}** पिकामध्ये **${diseaseDisplay}** चे निदान झाले आहे (विश्वासार्हता ${confPct}%). ${w.location_mr || 'स्थानिक'} हवामान आणि जमिनीतील ओलावा पाहता पिकाचे संरक्षण करण्यासाठी खालील शिफारशी तातडीने अंमलात आणाव्यात.`;
+    } else {
+      directAnswerText = `**${cropDisplay}** diagnosed with **${diseaseDisplay}** (${confPct}% confidence). Local weather and soil conditions indicate integrated curative and preventive measures are required.`;
+    }
   }
+
+  // Section 1: Integrated Summary is always prominently displayed
+  qaAnswerBox.style.display = "block";
+  const qaTitleEl = document.getElementById("txt-qa-answer-title");
+  if (displayQuestion) {
+    qaQuestionDisplay.style.display = "block";
+    qaQuestionDisplay.textContent = `"${displayQuestion}"`;
+    if (qaTitleEl) qaTitleEl.textContent = isMr ? "१. एकत्रित कृषी सारांश व उत्तर" : "1. Integrated Summary & Answer";
+  } else {
+    qaQuestionDisplay.style.display = "none";
+    if (qaTitleEl) qaTitleEl.textContent = isMr ? "१. एकत्रित कृषी सारांश" : "1. Integrated Summary";
+  }
+  qaDirectAnswer.innerHTML = renderMarkdown(directAnswerText);
+  currentDirectAnswerText = directAnswerText;
 
   // 3. Diagnosis & Confidence Banner
   if (isStandalone) {
@@ -1285,7 +1539,7 @@ function renderResults(data, options = {}) {
     }
   }
 
-  // 5. Structured Guidance (Explanation, Management, Prevention, Precautions, Advisory)
+  // 5. Structured Guidance (Explanation, Actions, Management, Prevention, Precautions, Advisory)
   const gBlock = isMr
     ? (data.guidance?.mr || data.guidance_mr || (data.guidance?.language === "marathi" ? data.guidance : null))
     : (data.guidance?.en || data.guidance_en || (data.guidance?.language === "english" ? data.guidance : null));
@@ -1296,16 +1550,50 @@ function renderResults(data, options = {}) {
   const precautionsText = gBlock?.precautions || (isMr ? translateBlockToMarathi("precautions", data) : (data.guidance?.precautions || "Use standard safety equipment."));
   const advisoryText = gBlock?.expert_advisory || (isMr ? translateBlockToMarathi("advisory", data) : (data.guidance?.expert_advisory || "Consult your local KVK."));
 
-  guidanceExplanation.textContent = explanationText;
-  guidanceManagement.textContent = managementText;
-  guidancePrevention.textContent = preventionText;
-  guidancePrecautions.textContent = precautionsText;
-  guidanceAdvisory.textContent = advisoryText;
+  // Weather Interpretation in Section 3
+  const weatherInterpText = gBlock?.weather_interpretation || data.guidance?.weather_interpretation || "";
+  const guidanceWeatherInterp = document.getElementById("guidance-weather-interp");
+  if (guidanceWeatherInterp) {
+    if (weatherInterpText) {
+      guidanceWeatherInterp.style.display = "block";
+      guidanceWeatherInterp.innerHTML = renderMarkdown(weatherInterpText);
+    } else {
+      guidanceWeatherInterp.style.display = "none";
+    }
+  }
 
+  // Section 2: Disease Explanation
+  guidanceExplanation.innerHTML = renderMarkdown(explanationText);
+
+  // Section 4: Soil Impact
   if (guidanceSoil) {
     const soilInterpText = gBlock?.soil_interpretation || (isMr ? translateBlockToMarathi("soil", data) : (data.guidance?.soil_interpretation || "Soil parameters baseline recorded."));
-    guidanceSoil.textContent = soilInterpText;
+    guidanceSoil.innerHTML = renderMarkdown(soilInterpText);
   }
+
+  // Section 5: Recommended Actions (Prioritized Key Action Items)
+  let actionsText = gBlock?.recommended_actions || "";
+  if (!actionsText && managementText) {
+    const mLines = managementText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const bulletLines = mLines.filter(l => l.match(/^[-*•\d]/));
+    if (bulletLines.length >= 2) {
+      actionsText = bulletLines.slice(0, 4).join("\n");
+    } else {
+      actionsText = mLines.slice(0, 3).map((l, idx) => `${idx + 1}. ${l.replace(/^[-*•\d.]+\s*/, '')}`).join("\n");
+    }
+  }
+  const guidanceActions = document.getElementById("guidance-actions");
+  if (guidanceActions) {
+    guidanceActions.innerHTML = renderMarkdown(actionsText || (isMr ? "शिफारस केलेल्या कृती त्वरित अंमलात आणा." : "Implement recommended management steps immediately."));
+  }
+
+  // Section 6: Treatment & Prevention
+  guidanceManagement.innerHTML = renderMarkdown(managementText);
+  guidancePrevention.innerHTML = renderMarkdown(preventionText);
+
+  // Section 7: Safety & Advisory
+  guidancePrecautions.innerHTML = renderMarkdown(precautionsText);
+  guidanceAdvisory.innerHTML = renderMarkdown(advisoryText);
 
   // Prepare full speech text
   currentGuidanceText = `${cropDisplay} ${diseaseDisplay}. ${directAnswerText ? directAnswerText + ". " : ""}${explanationText}. ${managementText}`;
