@@ -860,6 +860,9 @@ function handleSelectedFile(file) {
     dropzonePrompt.style.display = "none";
     previewContainer.style.display = "flex";
     analyzeBtn.disabled = false;
+    analyzeBtn.classList.remove("btn-unready");
+    analyzeBtn.classList.add("btn-ready");
+    analyzeBtn.title = "Ready to analyze leaf & weather";
   };
   reader.readAsDataURL(file);
 }
@@ -870,22 +873,53 @@ function resetFileInput() {
   imagePreview.src = "";
   previewContainer.style.display = "none";
   dropzonePrompt.style.display = "block";
-  analyzeBtn.disabled = true;
+  document.querySelectorAll(".sample-pill").forEach((p) => p.classList.remove("active"));
+  analyzeBtn.classList.add("btn-unready");
+  analyzeBtn.classList.remove("btn-ready");
+  analyzeBtn.title = "Click to analyze leaf photo and weather";
 }
 
 // Sample Selectors
 function setupSampleSelectors() {
-  document.querySelectorAll(".sample-pill").forEach((pill) => {
+  const pills = document.querySelectorAll(".sample-pill");
+  pills.forEach((pill) => {
     pill.addEventListener("click", async () => {
-      const src = pill.dataset.src;
-      try {
-        const res = await fetch(src);
-        if (!res.ok) throw new Error("Sample image not found on server.");
-        const blob = await res.blob();
-        const file = new File([blob], pill.dataset.name + ".jpg", { type: "image/jpeg" });
+      pills.forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+
+      const rawSrc = pill.dataset.src || "";
+      const filename = rawSrc.split("/").pop();
+      const candidates = [
+        rawSrc,
+        rawSrc.startsWith("/") ? rawSrc : "/" + rawSrc,
+        "/data/samples/" + filename,
+        "data/samples/" + filename,
+        "/static/data/samples/" + filename,
+        "static/data/samples/" + filename,
+      ];
+
+      let blob = null;
+      for (const candidate of candidates) {
+        if (!candidate) continue;
+        try {
+          const res = await fetch(candidate);
+          if (res.ok) {
+            blob = await res.blob();
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (blob) {
+        const file = new File([blob], (pill.dataset.name || "sample") + ".jpg", { type: "image/jpeg" });
         handleSelectedFile(file);
-      } catch (err) {
-        console.warn("Could not load sample file:", err);
+      } else {
+        console.warn("Could not load sample file from any candidate URL:", rawSrc);
+        alert(
+          currentLanguage === "marathi"
+            ? "नमुना पान लोड करण्यात अडचण आली. कृपया स्वतः फोटो निवडा."
+            : "Could not load sample leaf image. Please upload a photo manually."
+        );
       }
     });
   });
@@ -1039,9 +1073,19 @@ function setupTTS() {
 // Leaf Diagnosis Form Submission & Pipeline Execution
 function setupFormSubmission() {
   analyzeBtn.addEventListener("click", async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      dropzone.classList.add("highlight-prompt");
+      setTimeout(() => dropzone.classList.remove("highlight-prompt"), 1200);
+      alert(
+        currentLanguage === "marathi"
+          ? "कृपया प्रथम पिकाच्या पानाचा फोटो अपलोड करा किंवा वरील नमुना पान (Sample Leaf) निवडा."
+          : "Please upload a crop leaf photo or click a sample leaf button above to analyze."
+      );
+      return;
+    }
 
     analyzeBtn.disabled = true;
+    analyzeBtn.classList.remove("btn-ready");
     analyzeSpinner.style.display = "inline-block";
     btnAnalyzeText.textContent = I18N[currentLanguage].btnAnalyzing;
     qualityAlert.style.display = "none";
@@ -1076,6 +1120,7 @@ function setupFormSubmission() {
       handleBackendConnectionError(error, "Analysis");
     } finally {
       analyzeBtn.disabled = false;
+      analyzeBtn.classList.add("btn-ready");
       analyzeSpinner.style.display = "none";
       btnAnalyzeText.textContent = I18N[currentLanguage].btnAnalyze;
     }

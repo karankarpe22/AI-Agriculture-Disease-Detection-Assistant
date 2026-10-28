@@ -321,6 +321,74 @@ h1 {
   background: var(--accent-red);
 }
 
+/* Sample Leaf Selector Pills */
+.samples-group {
+  margin-top: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.sample-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.sample-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 0.38rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+
+.sample-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  background: var(--primary-light);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.18);
+  cursor: pointer;
+}
+
+.sample-pill:active {
+  transform: translateY(0);
+}
+
+.sample-pill:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sample-pill.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  box-shadow: 0 0 0 2.5px rgba(22, 163, 74, 0.3);
+  font-weight: 700;
+}
+
+@keyframes dropzonePulse {
+  0% { transform: scale(1); border-color: var(--primary); }
+  50% { transform: scale(1.02); border-color: #f59e0b; box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.25); }
+  100% { transform: scale(1); border-color: var(--primary); }
+}
+
+.highlight-prompt {
+  animation: dropzonePulse 0.9s ease-in-out;
+}
+
 /* Form Groups */
 .form-group {
   margin-top: 1.25rem;
@@ -458,6 +526,26 @@ h1 {
   opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.btn-primary.btn-unready {
+  opacity: 0.88;
+  cursor: pointer;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+.btn-primary.btn-unready:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.btn-primary.btn-ready {
+  opacity: 1;
+  cursor: pointer;
+  background: linear-gradient(135deg, #15803d, #166534);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3), 0 6px 18px var(--primary-glow);
+  transform: translateY(-1px);
 }
 
 .btn-spinner {

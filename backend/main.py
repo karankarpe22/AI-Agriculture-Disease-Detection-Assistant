@@ -115,6 +115,13 @@ frontend_dir = Path("frontend")
 if frontend_dir.exists():
     app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+# Mount data directory for sample leaf images and static datasets
+data_dir = Path("frontend/data")
+if not data_dir.exists():
+    data_dir = Path("data")
+if data_dir.exists():
+    app.mount("/data", StaticFiles(directory=str(data_dir)), name="data")
+
 # Security & file constraints
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/bmp"}

@@ -112,13 +112,13 @@
           <!-- Quick Samples Selector -->
           <div class="form-group samples-group">
             <label class="form-label" id="lbl-samples">🧪 Test with Sample Leaf:</label>
-            <div class="sample-pills">
-              <button type="button" class="sample-pill" id="sample-pill-early" data-src="/data/samples/sample_tomato_early_blight.jpg"
-                data-name="Tomato Early Blight" data-label-en="🍅 Early Blight" data-label-mr="🍅 लवकर करपा">🍅 Early Blight</button>
-              <button type="button" class="sample-pill" id="sample-pill-late" data-src="/data/samples/sample_potato_late_blight.jpg"
-                data-name="Potato Late Blight" data-label-en="🥔 Late Blight" data-label-mr="🥔 उशिरा करपा">🥔 Late Blight</button>
-              <button type="button" class="sample-pill" id="sample-pill-bact" data-src="/data/samples/sample_bell_pepper_bacterial_spot.jpg"
-                data-name="Bell Pepper Bacterial Spot" data-label-en="🫑 Bacterial Spot" data-label-mr="🫑 जिवाणू ठिपके">🫑 Bacterial Spot</button>
+            <div class="sample-pills" id="sample-pills-container">
+              <button type="button" class="sample-pill" id="sample-pill-early" data-src="data/samples/sample_tomato_early_blight.jpg"
+                data-name="Tomato Early Blight" data-label-en="🍅 Early Blight" data-label-mr="🍅 लवकर करपा" title="Load Tomato Early Blight sample">🍅 Early Blight</button>
+              <button type="button" class="sample-pill" id="sample-pill-late" data-src="data/samples/sample_potato_late_blight.jpg"
+                data-name="Potato Late Blight" data-label-en="🥔 Late Blight" data-label-mr="🥔 उशिरा करपा" title="Load Potato Late Blight sample">🥔 Late Blight</button>
+              <button type="button" class="sample-pill" id="sample-pill-bact" data-src="data/samples/sample_bell_pepper_bacterial_spot.jpg"
+                data-name="Bell Pepper Bacterial Spot" data-label-en="🫑 Bacterial Spot" data-label-mr="🫑 जिवाणू ठिपके" title="Load Bell Pepper Bacterial Spot sample">🫑 Bacterial Spot</button>
             </div>
           </div>
 
@@ -171,7 +171,7 @@
           </div>
 
           <!-- Submit Button -->
-          <button type="button" class="btn-primary" id="analyze-btn" disabled>
+          <button type="button" class="btn-primary btn-unready" id="analyze-btn" title="Click to analyze leaf photo and weather">
             <span class="btn-spinner" id="analyze-spinner" style="display: none;"></span>
             <span class="btn-text" id="btn-analyze-text">Analyze Crop Health</span>
           </button>
