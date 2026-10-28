@@ -25,6 +25,7 @@ from src.gemini.guidance_service import get_gemini_service
 from src.prediction.predict import DiseasePredictor
 from src.rag.vector_store import get_rag_service
 from src.utils.voice_service import get_voice_service
+from src.soil.soil_service import get_soil_service
 from src.weather.weather_service import get_weather_service
 
 # Logging setup
@@ -67,6 +68,13 @@ async def lifespan(app: FastAPI):
         logger.info("Weather microclimate service initialized.")
     except Exception as e:
         logger.warning(f"Weather service warmup note: {e}")
+
+    try:
+        # Pre-warm Soil Health service
+        soil_srv = await run_in_threadpool(get_soil_service)
+        logger.info(f"Soil Health Agent loaded ({len(soil_srv.records)} synthetic regional records).")
+    except Exception as e:
+        logger.warning(f"Soil service warmup note: {e}")
 
     yield
     logger.info("Shutting down AI Agriculture Assistant Backend.")
@@ -235,6 +243,7 @@ class HealthResponse(BaseModel):
     classes: list[str]
     rag_ready: bool
     gemini_ready: bool
+    soil_ready: bool
     weather_provider: str
 
 
@@ -319,6 +328,7 @@ def health_check():
     gemini_ready = bool(os.getenv("GEMINI_API_KEY", "").strip())
     weather_provider = "OpenWeatherMap" if os.getenv("WEATHER_API_KEY", "").strip() else "Open-Meteo (Live)"
 
+    soil_ready = len(get_soil_service().records) > 0
     return HealthResponse(
         status="healthy",
         model=model_name,
@@ -327,6 +337,7 @@ def health_check():
         classes=classes,
         rag_ready=rag_ready,
         gemini_ready=gemini_ready,
+        soil_ready=soil_ready,
         weather_provider=weather_provider,
     )
 
@@ -340,6 +351,17 @@ def get_weather(
     """Retrieve real-time weather and crop disease microclimate risk analysis."""
     service = get_weather_service()
     result = service.get_weather(city=city, latitude=lat, longitude=lon)
+    return result
+
+
+@app.get("/soil")
+def get_soil_profile(
+    city: str | None = Query(None, description="City or farmer location (e.g. Pune, Nashik)"),
+    crop: str | None = Query(None, description="Crop category (e.g. Tomato, Potato, Bell pepper)"),
+):
+    """Retrieve synthetic agro-climatic soil health profile and tripartite interaction interpretation."""
+    service = get_soil_service()
+    result = service.get_soil_health(location=city, crop=crop)
     return result
 
 
@@ -398,6 +420,13 @@ async def ask_question(request: AskRequest):
     )
     sources = rag.get_sources_summary(evidence)
 
+    soil_service = get_soil_service()
+    soil_data = await run_in_threadpool(
+        soil_service.get_soil_health,
+        location=request.location,
+        crop=resolved_crop,
+    )
+
     gemini = get_gemini_service()
     guidance = await run_in_threadpool(
         gemini.generate_guidance,
@@ -409,6 +438,7 @@ async def ask_question(request: AskRequest):
         farmer_question=request.question,
         language=request.language,
         is_low_confidence=request.is_low_confidence,
+        soil=soil_data,
     )
 
     crop_en = CROP_TRANSLATIONS.get(resolved_crop, {}).get("en", resolved_crop)
@@ -441,6 +471,7 @@ async def ask_question(request: AskRequest):
         "direct_answer_en": direct_answer_en,
         "direct_answer_mr": direct_answer_mr,
         "weather": localized_weather,
+        "soil": soil_data,
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,
@@ -507,7 +538,31 @@ async def analyze_leaf(
         evidence = []
         sources = []
 
-    # 4. Contextual Guidance from Gemini (offloaded to threadpool)
+    # 4. Synthetic Soil Health Context (offloaded to threadpool)
+    try:
+        soil_service = get_soil_service()
+        soil_data = await run_in_threadpool(
+            soil_service.get_soil_health,
+            location=location,
+            crop=crop,
+        )
+    except Exception as e:
+        logger.warning(f"Soil service error: {e}")
+        soil_data = {
+            "record_id": "SYN-SOIL-FALLBACK",
+            "soil_type": "Medium Black Soil",
+            "soil_ph": 7.0,
+            "soil_moisture_percent": 25.0,
+            "nitrogen_kg_ha": 180.0,
+            "phosphorus_kg_ha": 22.0,
+            "potassium_kg_ha": 300.0,
+            "organic_carbon_percent": 0.55,
+            "data_type": "synthetic",
+            "is_synthetic": True,
+            "is_fallback": True,
+        }
+
+    # 5. Contextual Guidance from Gemini with Tripartite Synthesis (offloaded to threadpool)
     try:
         gemini = get_gemini_service()
         guidance = await run_in_threadpool(
@@ -520,6 +575,7 @@ async def analyze_leaf(
             farmer_question=question,
             language=language,
             is_low_confidence=is_low_confidence,
+            soil=soil_data,
         )
     except Exception as e:
         logger.warning(f"Gemini service error: {e}")
@@ -579,6 +635,7 @@ async def analyze_leaf(
         "warning": pred_result.get("warning"),
         "top_predictions": pred_result.get("top_predictions", []),
         "weather": localized_weather,
+        "soil": soil_data,
         "evidence": evidence,
         "sources": sources,
         "guidance": guidance,

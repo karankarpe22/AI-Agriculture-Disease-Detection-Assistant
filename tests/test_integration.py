@@ -61,6 +61,12 @@ def test_full_analyze_pipeline_english():
     assert data["gradcam_base64"] is not None
     assert len(data["gradcam_base64"]) > 100
 
+    # 7. Verification of Synthetic Soil Health Context
+    assert "soil" in data
+    assert data["soil"]["data_type"] == "synthetic"
+    assert data["soil"]["soil_ph"] is not None
+    assert "soil_interpretation" in data["guidance"]
+
 
 def test_full_analyze_pipeline_marathi():
     test_dir = Path("data/test/Tomato_healthy")
@@ -84,6 +90,11 @@ def test_full_analyze_pipeline_marathi():
     data = response.json()
 
     assert data["success"] is True
-    assert data["crop"] == "Tomato"
+    # Crop is localized to Marathi when language='marathi'
+    assert data["crop"] in ["Tomato", "टोमॅटो"]
     assert data["guidance"]["language"] == "marathi"
     assert len(data["guidance"]["explanation"]) > 10
+    # Verification of Soil Health Context in Marathi
+    assert "soil" in data
+    assert data["soil"]["data_type"] == "synthetic"
+    assert "soil_interpretation" in data["guidance"]

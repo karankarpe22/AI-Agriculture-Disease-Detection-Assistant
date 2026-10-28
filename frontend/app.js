@@ -62,6 +62,15 @@ const I18N = {
     qaAnswerTitle: "Answer to Your Question",
     listenAnswer: "Listen",
 
+    soilHeading: "Soil Health Profile",
+    syntheticBadge: "🧪 Synthetic Demonstration",
+    soilTitle: "Soil Health & Nutrient Impact",
+    lblSoilPh: "Soil pH",
+    lblSoilMoisture: "Moisture",
+    lblSoilNpk: "Available N-P-K",
+    lblSoilCarbon: "Organic Carbon",
+    npkSub: "kg/ha (ICAR Rating)",
+
     explanationTitle: "Explanation",
     managementTitle: "Treatment & Management",
     preventionTitle: "Long-Term Prevention",
@@ -117,6 +126,15 @@ const I18N = {
 
     qaAnswerTitle: "तुमच्या प्रश्नाचे थेट उत्तर",
     listenAnswer: "ऐका",
+
+    soilHeading: "मृदा आरोग्य विश्लेषण",
+    syntheticBadge: "🧪 प्रात्यक्षिक मृदा नोंद",
+    soilTitle: "मृदा आरोग्य व पोषण समन्वय",
+    lblSoilPh: "जमिनीचा सामू (pH)",
+    lblSoilMoisture: "मातीतील ओलावा",
+    lblSoilNpk: "उपलब्ध नत्र-स्फुरद-पालाश",
+    lblSoilCarbon: "सेंद्रिय कर्ब",
+    npkSub: "किलो/हेक्टर (आयसीएआर प्रमाण)",
 
     explanationTitle: "रोगाचे स्पष्टीकरण व कारणे",
     managementTitle: "उपचार व नियंत्रण पद्धती",
@@ -338,6 +356,9 @@ function translateBlockToMarathi(section, data) {
   if (section === "advisory") {
     return `मोठ्या प्रमाणावर रासायनिक औषधांचा वापर करण्यापूर्वी आपल्या जवळच्या कृषी विज्ञान केंद्र (KVK) किंवा तालुका कृषी अधिकाऱ्यांशी संपर्क साधा.`;
   }
+  if (section === "soil") {
+    return `मृदा आरोग्य विश्लेषण [प्रात्यक्षिक नोंद]: जमिनीतील सामू (pH) व पालाशचे योग्य प्रमाण पानांच्या पेशींना बळकटी देते. मातीत ओलावा जास्त असल्यास बुरशीच्या बीजाणूंचा फैलाव वेगाने होतो, त्यामुळे पाण्याचा निचरा योग्य ठेवा आणि जमिनीवर पाणी साचू देऊ नका. (टीप: ही प्रात्यक्षिक माहिती आहे; प्रत्यक्ष खतांच्या नियोजनासाठी अधिकृत माती परीक्षण पत्रिका वापरावी).`;
+  }
   return "";
 }
 
@@ -402,6 +423,28 @@ const weatherBox = document.getElementById("weather-box");
 const weatherLoc = document.getElementById("weather-loc");
 const weatherDetails = document.getElementById("weather-details");
 const weatherRiskText = document.getElementById("weather-risk-text");
+
+// Soil Health Micro-Card & Guidance
+const soilBox = document.getElementById("soil-box");
+const txtSoilHeading = document.getElementById("txt-soil-heading");
+const badgeSynthetic = document.getElementById("badge-synthetic");
+const soilTypeLabel = document.getElementById("soil-type-label");
+const lblSoilPh = document.getElementById("lbl-soil-ph");
+const valSoilPh = document.getElementById("val-soil-ph");
+const subSoilPh = document.getElementById("sub-soil-ph");
+const lblSoilMoisture = document.getElementById("lbl-soil-moisture");
+const valSoilMoisture = document.getElementById("val-soil-moisture");
+const subSoilMoisture = document.getElementById("sub-soil-moisture");
+const lblSoilNpk = document.getElementById("lbl-soil-npk");
+const valSoilNpk = document.getElementById("val-soil-npk");
+const subSoilNpk = document.getElementById("sub-soil-npk");
+const lblSoilCarbon = document.getElementById("lbl-soil-carbon");
+const valSoilCarbon = document.getElementById("val-soil-carbon");
+const subSoilCarbon = document.getElementById("sub-soil-carbon");
+const soilRiskText = document.getElementById("soil-risk-text");
+const blockSoil = document.getElementById("block-soil");
+const txtSoilTitle = document.getElementById("txt-soil-title");
+const guidanceSoil = document.getElementById("guidance-soil");
 
 // Audio & Guidance
 const ttsBtn = document.getElementById("tts-btn");
@@ -593,6 +636,16 @@ function setLanguage(lang) {
   document.getElementById("txt-gradcam-desc").textContent = t.gradcamDesc;
   document.getElementById("txt-sources-title").textContent = t.sourcesTitle;
   document.getElementById("txt-footer").textContent = t.footerText;
+
+  // Localize Soil Health card
+  if (txtSoilHeading) txtSoilHeading.textContent = t.soilHeading;
+  if (badgeSynthetic) badgeSynthetic.textContent = t.syntheticBadge;
+  if (txtSoilTitle) txtSoilTitle.textContent = t.soilTitle;
+  if (lblSoilPh) lblSoilPh.textContent = t.lblSoilPh;
+  if (lblSoilMoisture) lblSoilMoisture.textContent = t.lblSoilMoisture;
+  if (lblSoilNpk) lblSoilNpk.textContent = t.lblSoilNpk;
+  if (lblSoilCarbon) lblSoilCarbon.textContent = t.lblSoilCarbon;
+  if (subSoilNpk) subSoilNpk.textContent = t.npkSub;
 
   document.getElementById("txt-followup-title").textContent = t.followupTitle;
   document.getElementById("txt-followup-sub").textContent = t.followupSub;
@@ -1084,6 +1137,7 @@ function renderResults(data, options = {}) {
       : (data.warning || "Image quality issue detected.");
     diagnosisBanner.style.display = "none";
     weatherBox.style.display = "none";
+    if (soilBox) soilBox.style.display = "none";
     guidanceSections.style.display = "none";
     qaAnswerBox.style.display = "none";
     gradcamBox.style.display = "none";
@@ -1094,6 +1148,7 @@ function renderResults(data, options = {}) {
   qualityAlert.style.display = "none";
   diagnosisBanner.style.display = "block";
   weatherBox.style.display = "block";
+  if (soilBox) soilBox.style.display = "block";
   guidanceSections.style.display = "flex";
   followupCard.style.display = "block";
 
@@ -1196,6 +1251,40 @@ function renderResults(data, options = {}) {
     weatherRiskText.textContent = w.risk_analysis || "Standard seasonal precautions apply.";
   }
 
+  // 4b. Synthetic Soil Health Context
+  const s = data.soil || {};
+  const sInterp = s.interpretation || {};
+  if (soilBox) {
+    soilBox.style.display = "block";
+    if (soilTypeLabel) {
+      soilTypeLabel.textContent = isMr
+        ? (sInterp.soil_type_mr || "मध्यम काळी कसदार जमीन (Vertisol)")
+        : (s.soil_type || "Medium Black Soil (Vertisol)");
+    }
+    if (valSoilPh) valSoilPh.textContent = s.soil_ph != null ? s.soil_ph.toFixed(1) : "7.0";
+    if (subSoilPh) subSoilPh.textContent = isMr ? (sInterp.ph_status_mr || "योग्य") : (sInterp.ph_status || "Optimal Neutral");
+
+    if (valSoilMoisture) valSoilMoisture.textContent = s.soil_moisture_percent != null ? `${s.soil_moisture_percent.toFixed(1)}%` : "25.0%";
+    if (subSoilMoisture) subSoilMoisture.textContent = isMr ? (sInterp.moisture_status_mr || "वाफसा स्थिती") : (sInterp.moisture_status || "Field Capacity");
+
+    if (valSoilNpk) {
+      const nVal = s.nitrogen_kg_ha != null ? Math.round(s.nitrogen_kg_ha) : 185;
+      const pVal = s.phosphorus_kg_ha != null ? Math.round(s.phosphorus_kg_ha) : 22;
+      const kVal = s.potassium_kg_ha != null ? Math.round(s.potassium_kg_ha) : 310;
+      valSoilNpk.textContent = `${nVal}-${pVal}-${kVal}`;
+    }
+    if (subSoilNpk) subSoilNpk.textContent = isMr ? "किलो/हेक्टर (आयसीएआर)" : "kg/ha (ICAR Rating)";
+
+    if (valSoilCarbon) valSoilCarbon.textContent = s.organic_carbon_percent != null ? `${s.organic_carbon_percent.toFixed(2)}%` : "0.58%";
+    if (subSoilCarbon) subSoilCarbon.textContent = isMr ? (sInterp.organic_carbon_rating === "High" ? "उत्कृष्ट" : (sInterp.organic_carbon_rating === "Low" ? "कमी" : "मध्यम")) : (sInterp.organic_carbon_rating || "Medium");
+
+    if (soilRiskText) {
+      soilRiskText.textContent = isMr
+        ? (sInterp.disease_soil_interaction_mr || "जमिनीतील गुणधर्म संतुलित असून पीक पोषणासाठी अनुकूल आहेत.")
+        : (sInterp.disease_soil_interaction || "Soil parameters within regional equilibrium with moderate disease vulnerability.");
+    }
+  }
+
   // 5. Structured Guidance (Explanation, Management, Prevention, Precautions, Advisory)
   const gBlock = isMr
     ? (data.guidance?.mr || data.guidance_mr || (data.guidance?.language === "marathi" ? data.guidance : null))
@@ -1212,6 +1301,11 @@ function renderResults(data, options = {}) {
   guidancePrevention.textContent = preventionText;
   guidancePrecautions.textContent = precautionsText;
   guidanceAdvisory.textContent = advisoryText;
+
+  if (guidanceSoil) {
+    const soilInterpText = gBlock?.soil_interpretation || (isMr ? translateBlockToMarathi("soil", data) : (data.guidance?.soil_interpretation || "Soil parameters baseline recorded."));
+    guidanceSoil.textContent = soilInterpText;
+  }
 
   // Prepare full speech text
   currentGuidanceText = `${cropDisplay} ${diseaseDisplay}. ${directAnswerText ? directAnswerText + ". " : ""}${explanationText}. ${managementText}`;

@@ -52,8 +52,10 @@ flowchart TB
         GradCAM["Grad-CAM Saliency Engine (features[-1] Conv Hook)"]
     end
 
-    subgraph GroundingLayer ["4. RAG & Meteorological Subsystems"]
+    subgraph GroundingLayer ["4. Multi-Modal Context Grounding Subsystems"]
         WeatherService["Open-Meteo Microclimate Engine (Temp, Humidity, Rain)"]
+        SoilAgent["Synthetic Soil Health Agent (Agro-Climatic Matcher)"]
+        SoilData["Synthetic Soil Dataset (JSON/CSV v1.0.0-synthetic-demo)"]
         FAISS["FAISS IndexFlatL2 Dense Vector Store"]
         MiniLM["paraphrase-multilingual-MiniLM-L12-v2 Embeddings"]
         ICAR["Curated ICAR Pathology Knowledge Base (13 Markdown Guides)"]
@@ -84,12 +86,15 @@ flowchart TB
     Transforms --> CNN
     CNN --> GradCAM
     FastAPI --> WeatherService
+    FastAPI --> SoilAgent
+    SoilData --> SoilAgent
     FastAPI --> FAISS
     ICAR --> MiniLM --> FAISS
 
-    CNN -->|Diagnosis & Confidence| Cascade
+    CNN -->|1. Disease Perception & Confidence| Cascade
     GradCAM -->|Heatmap Base64| FastAPI
-    WeatherService -->|Microclimate Risk Context| Cascade
+    WeatherService -->|2. Microclimate Weather Context| Cascade
+    SoilAgent -->|3. Synthetic Soil Health Context| Cascade
     FAISS -->|Top-3 Grounded ICAR Chunks| Cascade
 
     Cascade --> M1
@@ -174,9 +179,12 @@ Stage 2: Fine-Tuning Upper Layers (Phase 3)
 * **Phase 2 (Head Training):** The backbone is completely frozen (`requires_grad = False`). The randomly initialized linear head (`nn.Linear(1024, 13)`) is trained with AdamW ($LR = 10^{-3}$) for 3 epochs. This aligns output weights without destroying pretrained feature detectors.
 * **Phase 3 (Fine-Tuning):** The top 3 Inverted Residual blocks are unfrozen. Training proceeds for 2 epochs using a gentle learning rate ($LR = 10^{-4}$ with `CosineAnnealingLR` decaying to $10^{-6}$).
 * **Empirical Validation:**
-  * Validation accuracy increased from **74.77% $ightarrow$ 83.54%** (+8.77% gain).
-  * Validation loss dropped from **0.8105 $ightarrow$ 0.5702** (29.6% error reduction).
-  * Training loss dropped from **0.3312 $ightarrow$ 0.0628** (5.3x lower error).
+  * Validation accuracy increased from **74.77% $
+ightarrow$ 83.54%** (+8.77% gain).
+  * Validation loss dropped from **0.8105 $
+ightarrow$ 0.5702** (29.6% error reduction).
+  * Training loss dropped from **0.3312 $
+ightarrow$ 0.0628** (5.3x lower error).
   * Test set precision reached **86.99%** with an average CPU inference latency of **21.5 ms**.
 
 #### 4. Visual Saliency via Grad-CAM
@@ -184,7 +192,8 @@ To guarantee model interpretability and farmer trust, Gradient-weighted Class Ac
 1. Compute the gradient of the winning class logit $y^c$ with respect to feature activation maps $A^k$:
    $$lpha_k^c = rac{1}{Z} \sum_{i=1}^{U} \sum_{j=1}^{V} rac{\partial y^c}{\partial A_{ij}^k}$$
 2. Weight activations and apply ReLU to isolate features positively contributing to the diagnosis:
-   $$L_{	ext{Grad-CAM}}^c = 	ext{ReLU}\left(\sum_{k} lpha_k^c A^kight)$$
+   $$L_{	ext{Grad-CAM}}^c = 	ext{ReLU}\left(\sum_{k} lpha_k^c A^k
+ight)$$
 3. The normalized heatmap is upsampled to $224 	imes 224$ and superimposed as a jet-colormap over the leaf image, visually verifying that the CNN looked at the actual fungal lesions rather than background soil.
 
 ---
@@ -228,12 +237,51 @@ Crop diseases are biological events driven by microclimate conditions:
 
 ---
 
-### Subsystem 5: Generative Agronomist Advisory Layer (`src/gemini/guidance_service.py`)
+### Subsystem 5: Synthetic Soil Health Agent (`src/soil/soil_service.py`)
+Soil chemistry and moisture dynamics fundamentally govern crop vigor, root defense, and fungicide absorption:
+* **The Problem:** Smallholder farmers rarely possess recent laboratory soil test core analyses (taking 7–14 days and costing Rs. 500–1000). Requiring manual entry of N-P-K or pH creates severe user friction and drop-off.
+* **The Solution:** A modular, deterministic **Soil Health Agent** backed by a structured regional synthetic dataset (`data/soil/synthetic_soil_records.json` and `.csv`).
+* **Dataset Schema (`version 1.0.0-synthetic-demo`):**
+  * `record_id`: Unique identifier (e.g., `SOIL-MH-PUN-001`).
+  * `location` / `district` / `agro_climatic_zone`: Regional mapping (e.g., Pune / Western Maharashtra Scarcity Zone).
+  * `crop_type`: Target crop (`Potato`, `Tomato`, `General`).
+  * `soil_type`: Dominant physical soil class (e.g., Medium Deep Black Soil, Loamy Clay, Lateritic).
+  * `soil_ph`: Soil reaction index ($5.5 - 8.5$).
+  * `soil_moisture_percent`: Volumetric root-zone moisture ($10.0\% - 85.0\%$).
+  * `nitrogen_kg_ha`, `phosphorus_kg_ha`, `potassium_kg_ha`: Available primary macronutrients ($kg/ha$).
+  * `organic_carbon_percent`: Soil biological activity and humus index ($0.2\% - 1.8\%$).
+  * `electrical_conductivity_ds_m`: Salinity metric ($dS/m$).
+  * `drainage_class`: Infiltration status (`Well-drained`, `Moderate`, `Impeded`).
+  * `data_type`: Explicitly constant `"synthetic"`.
+  * `disclaimer`: Prominent notification: *"Demonstration synthetic baseline record. Not a physical laboratory measurement."*
+* **Hierarchical Matching Strategy:**
+  1. **Exact match:** `(location, crop)` pair.
+  2. **Location general:** `(location, 'General')`.
+  3. **Location default:** First entry matching the queried city.
+  4. **Sub-basin alias match:** Resolves agricultural sub-regions (e.g., *Akurdi* -> *Pune*, *Baramati* -> *Pune*).
+  5. **Regional baseline fallback:** Returns verified Maharashtra agro-climatic benchmark with explicit `is_fallback=True` metadata.
+* **Derived Agronomic Interpretation:**
+  * Categorizes pH status (Optimal / Acidic / Alkaline).
+  * Categorizes moisture regime (Adequate / Waterlogged / Deficit).
+  * Evaluates qualitative N-P-K nutrient status against ICAR standards.
+  * Formulates localized disease-soil interaction notes in English and Marathi.
+
+---
+
+### Subsystem 6: Generative Agronomist Advisory Layer (`src/gemini/guidance_service.py`)
 
 ```
-Diagnosis + Grad-CAM + Weather Context + Top-3 ICAR Chunks + Farmer Question
-                                 │
-                                 ▼
+┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
+│   1. Disease Context    │  │   2. Weather Context    │  │   3. Soil Health Context│
+│  • MobileNetV3 Class    │  │  • Open-Meteo Temp/Hum  │  │  • Validated N-P-K & pH │
+│  • Perception Confidence│  │  • Precipitation Risk   │  │  • Moisture & Soil Type │
+│  • Top-3 ICAR Evidence  │  │  • Vector Warnings      │  │  • Synthetic Disclaimer │
+└────────────┬────────────┘  └────────────┬────────────┘  └────────────┬────────────┘
+             │                            │                            │
+             └──────────────────────┬─────┴────────────────────────────┘
+                                    │ (Tripartite Context Assembly)
+                                    ▼
+                 [ Dynamic Multi-Model Cascading Engine ]
               [ Dynamic Multi-Model Cascading Engine ]
       ┌─────────────────────────────────────────────────────┐
       │ Primary:   gemini-flash-lite-latest (Fastest, High Quota) │
@@ -261,6 +309,8 @@ The generative prompt enforces strict structural boundaries to prevent unstructu
   "direct_answer": "Precise, direct answer addressing the farmer's exact query.",
   "explanation": "Pathological background of the causal organism and foliar impact.",
   "weather_interpretation": "Evaluation of how prevailing local humidity/temperature influences spread.",
+  "soil_interpretation": "Interdependent analysis of soil pH, root-zone moisture, and nutrient status on crop vigor and fungal susceptibility.",
+  "synthetic_soil_disclosure": "Explicit disclosure noting soil values represent synthetic baseline demonstration data.", 
   "management_guidance": "Exact ICAR chemical sprays with formulation and dosage per liter.",
   "prevention": "Cultural practices, crop rotation, sanitation, and drip irrigation guidance.",
   "precautions": "Mandatory PPE handling, waiting periods, and pre-harvest intervals.",
@@ -282,23 +332,28 @@ If internet access is completely absent in the field, the system activates an of
 
 ---
 
-### Subsystem 6: Human-Like Neural Speech Subsystem (`src/utils/voice_service.py`)
+### Subsystem 7: Human-Like Neural Speech Subsystem (`src/utils/voice_service.py`)
 * **Engine:** Microsoft Azure Neural Speech via `edge-tts`.
   * **English (India):** `en-IN-NeerjaExpressiveNeural` (natural conversational cadence with human breathing pauses and friendly Indian English inflection).
   * **Marathi (India):** `mr-IN-AarohiNeural` (authentic native Marathi articulation).
 * **Agricultural Text Normalization (`_clean_for_speech`):**
   * Strips Markdown formatting (`*`, `#`, `•`).
   * Expands abbreviations into spoken language:
-    * `°C` $ightarrow$ *"degrees Celsius"* / *"अंश सेल्सिअस"*
-    * `g/L` $ightarrow$ *"grams per liter"* / *"ग्रॅम प्रति लिटर"*
-    * `ml/L` $ightarrow$ *"milliliters per liter"* / *"मिली प्रति लिटर"*
-    * `WP @ 2.5` $ightarrow$ *"wettable powder at 2.5"* / *"डब्ल्यूपी अडीच प्रमाणे"*
-    * `ICAR` $ightarrow$ *"I.C.A.R."* / *"आयसीएआर"*
+    * `°C` $
+ightarrow$ *"degrees Celsius"* / *"अंश सेल्सिअस"*
+    * `g/L` $
+ightarrow$ *"grams per liter"* / *"ग्रॅम प्रति लिटर"*
+    * `ml/L` $
+ightarrow$ *"milliliters per liter"* / *"मिली प्रति लिटर"*
+    * `WP @ 2.5` $
+ightarrow$ *"wettable powder at 2.5"* / *"डब्ल्यूपी अडीच प्रमाणे"*
+    * `ICAR` $
+ightarrow$ *"I.C.A.R."* / *"आयसीएआर"*
 * **Sub-2ms Disk Cache:** Input speech text is hashed via MD5 and cached as MP3 in `outputs/audio_cache/`. Repeated playback loads in **$< 2	ext{ ms}$** with zero bandwidth consumption.
 
 ---
 
-### Subsystem 7: API Gateway & Performance Optimizations (`backend/main.py`)
+### Subsystem 8: API Gateway & Performance Optimizations (`backend/main.py`)
 * **Framework:** **FastAPI** on **Uvicorn** ASGI server.
 * **Lifespan Startup Warm-Up:** Pre-warms `DiseasePredictor`, `RAGService`, and `WeatherService` at boot time using `@asynccontextmanager lifespan(app: FastAPI)`, eliminating the 5–7 second cold-start delay on first use.
 * **Asynchronous Threadpool Offloading:** Uses `starlette.concurrency.run_in_threadpool` for CPU-bound PyTorch inference, Grad-CAM rendering, and FAISS vector retrieval, preventing blocking of the async event loop.
@@ -331,15 +386,20 @@ sequenceDiagram
         Gateway->>CNN: run_in_threadpool(predictor.predict)
         CNN-->>Gateway: Disease Class, Confidence (98.4%), Grad-CAM Heatmap
         
-        par Parallel Context Gathering
+        participant Soil as Soil Health Agent (soil_service.py)
+
+        par Parallel Tripartite Context Gathering
             Gateway->>Weather: get_weather(location)
             Weather-->>Gateway: Temp, Humidity, Disease Risk Index
+        and
+            Gateway->>Soil: get_soil_data(location, crop)
+            Soil-->>Gateway: Synthetic Soil Chemistry, pH, NPK, Disclaimer
         and
             Gateway->>RAG: retrieve(crop, disease, question, top_k=3)
             RAG-->>Gateway: Top-3 ICAR Research Chunks
         end
         
-        Gateway->>Gemini: generate_guidance(crop, disease, weather, evidence, question)
+        Gateway->>Gemini: generate_guidance(crop, disease, weather, soil, evidence, question)
         Gemini-->>Gateway: Structured Advisory JSON (Direct Answer, Sprays, Safety)
         Gateway-->>Farmer: Comprehensive JSON Response (Diagnosis + Heatmap + Guidance)
     end
@@ -383,7 +443,8 @@ sequenceDiagram
 | **RAG Retrieval** | `src/rag/vector_store.py` | Dense vector indexing, semantic search, ICAR chunk retrieval | FAISS, sentence-transformers, MiniLM |
 | **Knowledge Base** | `knowledge_base/*.md` | Curated pathology guidelines, chemical dosages, cultural controls | Markdown, ICAR Publications |
 | **Microclimate** | `src/weather/weather_service.py` | Live meteorological telemetry ingestion, fungal/bacterial risk modeling | Open-Meteo REST API, OpenWeatherMap |
-| **Generative LLM** | `src/gemini/guidance_service.py` | Multi-model cascading (`flash-lite` $ightarrow$ `3.6-flash`), offline intent matcher | Google Gemini API, Regex, Python |
+| **Generative LLM** | `src/gemini/guidance_service.py` | Multi-model cascading (`flash-lite` $
+ightarrow$ `3.6-flash`), offline intent matcher | Google Gemini API, Regex, Python |
 | **Neural Speech** | `src/utils/voice_service.py` | Spoken text normalization, Azure Neural speech synthesis, MD5 disk cache | `edge-tts`, asyncio, hashlib |
 | **Client Interface**| `frontend/index.html`, `app.js`, `styles.css` | Tabbed dual-mode interface, audio playback, mic voice input | HTML5, Vanilla JavaScript, CSS3 |
 

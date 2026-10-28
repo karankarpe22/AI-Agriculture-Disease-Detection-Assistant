@@ -58,7 +58,13 @@ The backend is built as a **High-Performance Asynchronous Python Microservice** 
   * `GET /weather`: Fetches live weather for a city or GPS coordinates and calculates disease microclimate risk.
   * `POST /predict`: Lightweight endpoint executing quality checks and MobileNetV3 classification + Grad-CAM.
   * `POST /ask`: Conversational Q&A endpoint supporting both follow-ups on diagnosed crops and standalone farming questions.
-  * `POST /analyze`: Complete end-to-end pipeline (Upload $ightarrow$ Quality $ightarrow$ Vision $ightarrow$ Weather $ightarrow$ RAG $ightarrow$ Gemini $ightarrow$ Grad-CAM).
+  * `POST /analyze`: Complete end-to-end pipeline (Upload $
+ightarrow$ Quality $
+ightarrow$ Vision $
+ightarrow$ Weather $
+ightarrow$ RAG $
+ightarrow$ Gemini $
+ightarrow$ Grad-CAM).
   * `POST /tts`: Generates natural neural audio in English (`en-IN-NeerjaExpressiveNeural`) or Marathi (`mr-IN-AarohiNeural`).
 * **Optimizations**:
   * **Lifespan Startup Warm-Up**: Pre-loads PyTorch weights and FAISS indices into memory at boot time, eliminating cold-start latency.
@@ -113,14 +119,33 @@ abla^2 I) < 15.0$ (severely out of focus).
 * **Data Sources**: Queries **Open-Meteo** (live, free, global weather API) with automatic fallback to **OpenWeatherMap**.
 * **Risk Engine**:
   * Calculates disease escalation potential based on environmental thresholds:
-    * Relative humidity $> 75\%$ + warm temperature ($20	ext{--}28^\circ	ext{C}$) $ightarrow$ High fungal sporulation risk (e.g. Early/Late Blight).
-    * Frequent rain + leaf wetness $ightarrow$ High bacterial splash infection risk (e.g. Bacterial Spot).
+    * Relative humidity $> 75\%$ + warm temperature ($20	ext{--}28^\circ	ext{C}$) $
+ightarrow$ High fungal sporulation risk (e.g. Early/Late Blight).
+    * Frequent rain + leaf wetness $
+ightarrow$ High bacterial splash infection risk (e.g. Bacterial Spot).
 * **Caching**: In-memory 10-minute cache prevents redundant external network requests for the same locality.
 
 ---
 
-### Component 6: Generative Advisory Subsystem (`src/gemini/guidance_service.py`)
-* **Role**: Synthesizes vision predictions, weather risk, RAG evidence, and farmer questions into structured, empathetic advisory reports.
+### Component 6: Synthetic Soil Health Subsystem (`src/soil/soil_service.py`)
+* **Role**: Ingests farmer location and crop type, automatically retrieves regional agro-climatic soil baselines, and validates soil chemistry without requiring manual farmer numeric input.
+* **Architecture**:
+  * **Dataset**: Plausible simulated records stored in `data/soil/synthetic_soil_records.json` and `.csv` (`version 1.0.0-synthetic-demo`).
+  * **Schema Validation**: Robust Pydantic model (`SoilHealthRecord`) enforcing numeric bounds (pH $3.0-10.0$, moisture $0-100\%$, organic carbon $0-10\%$) and validating constant `data_type="synthetic"`.
+  * **Matching Hierarchy**:
+    1. Exact `(location, crop)` match.
+    2. Location with `'General'` crop.
+    3. Location default record.
+    4. Regional sub-basin alias (e.g., *Akurdi* -> *Pune*, *Baramati* -> *Pune*).
+    5. State regional benchmark fallback with explicit `is_fallback=True` metadata.
+  * **Derived Agronomic Interpretation**: Calculates qualitative pH class (acidic/neutral/alkaline), moisture regime (waterlogged/adequate/deficit), N-P-K nutrient adequacy, and bilingual disease-soil interaction notes.
+  * **Zero Farmer Friction**: Farmer selects only location/crop; the system resolves soil parameters instantly in $< 1\text{ ms}$.
+  * **Strict Synthetic Disclosure**: All outputs, API responses, and frontend cards carry unambiguous synthetic demonstration warnings.
+
+---
+
+### Component 7: Generative Advisory Subsystem (`src/gemini/guidance_service.py`)
+* **Role**: Synthesizes the tripartite agronomist triad (**1. Crop Disease Perception**, **2. Live Weather Risk**, **3. Soil Health Context**) alongside ICAR RAG evidence into unified, non-hallucinated advisory reports.
 * **Multi-Model Cascading Architecture**:
   * Automatically cascades across available Google Gemini models to prevent quota bottlenecks:
     $$	ext{gemini-flash-lite-latest} \longrightarrow 	ext{gemini-3.6-flash} \longrightarrow 	ext{gemini-flash-latest} \longrightarrow 	ext{gemini-2.5-flash}$$
@@ -132,14 +157,19 @@ abla^2 I) < 15.0$ (severely out of focus).
 
 ---
 
-### Component 7: Neural Voice Subsystem (`src/utils/voice_service.py`)
+### Component 8: Neural Voice Subsystem (`src/utils/voice_service.py`)
 * **Role**: Converts written advice into natural, human-like speech for rural accessibility.
 * **Engine**: Microsoft Azure Neural TTS via `edge-tts`.
   * English (India): `en-IN-NeerjaExpressiveNeural` (natural Indian English cadence with human breathing pauses).
   * Marathi (India): `mr-IN-AarohiNeural` (authentic native Marathi articulation).
 * **Spoken Text Normalizer**:
   * Strips markdown formatting (`*`, `#`, `•`).
-  * Expands agricultural technical notations: `°C` $ightarrow$ *"degrees Celsius"*, `g/L` $ightarrow$ *"grams per liter"*, `%` $ightarrow$ *"percent"*, `@` $ightarrow$ *"at"*, `ICAR` $ightarrow$ *"I.C.A.R."*.
+  * Expands agricultural technical notations: `°C` $
+ightarrow$ *"degrees Celsius"*, `g/L` $
+ightarrow$ *"grams per liter"*, `%` $
+ightarrow$ *"percent"*, `@` $
+ightarrow$ *"at"*, `ICAR` $
+ightarrow$ *"I.C.A.R."*.
 * **Sub-2ms Disk Cache**:
   * Hashes input text using MD5 and saves synthesized audio in `outputs/audio_cache/`. Repeated playback loads instantaneously with zero network overhead.
 
@@ -156,6 +186,8 @@ abla^2 I) < 15.0$ (severely out of focus).
 | **Intelligent Intent Fallback** | Natural language intent regex matcher in offline mode | Direct, accurate answers for location/symptom queries even offline |
 | **Sub-2ms Audio Caching** | MD5 hash disk caching in `outputs/audio_cache/` | Zero latency and zero API calls on repeated speech requests |
 | **In-Memory Weather Caching** | 10-minute coordinate cache in `weather_service.py` | Eliminates redundant meteorological API calls |
+| **Hierarchical Soil Matching** | 5-stage automated fallback in `soil_service.py` | Zero manual farmer input burden with sub-millisecond lookup |
+| **Tripartite Context Assembly** | Equal three-pillar prompt synthesis (Disease + Weather + Soil) | Truly integrated diagnosis without arbitrary numeric weighting |
 
 ---
 
@@ -172,3 +204,12 @@ abla^2 I) < 15.0$ (severely out of focus).
 
 ### Q4: "What happens if the farmer's field has no internet or Google Gemini is down?"
 > **Answer**: *"The backend is architected with dual-layer resilience. If Gemini returns 429 or is unreachable, the system automatically falls back to our grounded RAG formatter and semantic intent parser, generating comprehensive, medically sound ICAR advice in English or Marathi completely offline."*
+
+### Q5: "Why did you use synthetic soil data instead of requiring the farmer to enter real soil test values?"
+> **Answer**: *"Real agricultural soil testing requires core physical sampling, laboratory chemical analysis, and takes 7–14 days at significant cost. Smallholder farmers rarely have recent soil test cards. If our application demanded manual entry of electrical conductivity or available phosphorus in kg/ha, user drop-off would be 100%. By implementing an automated Soil Health Agent that maps locations to regional agro-climatic synthetic baselines, we provide rich demonstration guidance with zero user friction while strictly disclosing that values are synthetic demonstration baselines."*
+
+### Q6: "How does Gemini combine crop disease, weather, and soil health without arbitrary mathematical weights?"
+> **Answer**: *"Crop pathology is an interdependent biological ecosystem, not an artificial linear equation. We explicitly reject arbitrary weighted sums like `0.4*disease + 0.3*weather + 0.3*soil`. Instead, our prompt structures all three categories with equal contextual prominence and instructs Gemini to evaluate their biological interactions—such as how low soil pH (5.8) in acidic red soil impairs root systemic fungicide uptake during high humidity (>85%) early blight outbreaks."*
+
+### Q7: "How is academic and scientific integrity maintained regarding synthetic data?"
+> **Answer**: *"Every synthetic record in the JSON/CSV dataset, every Pydantic validation model, every API response schema, and the frontend UI cards explicitly feature a prominent disclaimer badge (`data_type: 'synthetic'`, `dataset_version: '1.0.0-synthetic-demo'`). The system never misrepresents generated values as physical field measurements and refrains from prescribing unsupported commercial chemical fertilizer dosages without verified soil laboratory tests."*

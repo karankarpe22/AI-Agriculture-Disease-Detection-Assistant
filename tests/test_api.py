@@ -151,3 +151,37 @@ def test_translate_endpoint():
     data = response.json()
     assert data["success"] is True
     assert "काळजी" in data["translated_text"] or len(data["translated_text"]) > 5
+
+
+def test_soil_endpoint():
+    """Verify GET /soil endpoint returns validated synthetic record with interpretation."""
+    response = client.get("/soil?city=Pune&crop=Tomato")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["location"] == "Pune"
+    assert data["crop_type"] == "Tomato"
+    assert data["is_synthetic"] is True
+    assert data["data_type"] == "synthetic"
+    assert "units" in data
+    assert "interpretation" in data
+    assert 6.0 <= data["soil_ph"] <= 8.5
+    assert "disclaimer" in data
+
+
+def test_soil_endpoint_fallback():
+    """Verify GET /soil endpoint falls back gracefully for unknown location."""
+    response = client.get("/soil?city=NonExistentTown123")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_synthetic"] is True
+    assert data["is_fallback"] is True
+    assert "interpretation" in data
+
+
+def test_health_reports_soil_ready():
+    """Verify /health endpoint reports soil_ready=True."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert "soil_ready" in data
+    assert data["soil_ready"] is True

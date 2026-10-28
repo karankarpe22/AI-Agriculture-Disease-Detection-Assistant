@@ -1044,3 +1044,120 @@ h1 {
   font-weight: 700;
   color: #166534;
 }
+
+
+/* Soil Health Box (Synthetic Baseline) */
+.soil-box {
+  background: #fdf4ff;
+  border: 1px solid #f0abfc;
+  border-radius: var(--border-radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.soil-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.soil-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.soil-icon {
+  font-size: 1.75rem;
+}
+
+.soil-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.soil-title-row strong {
+  font-size: 0.95rem;
+  color: #86198f;
+}
+
+.badge-synthetic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #fae8ff;
+  color: #a21caf;
+  border: 1px solid #e879f9;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.soil-type-label {
+  font-size: 0.8rem;
+  color: #701a75;
+  margin-top: 0.15rem;
+  font-weight: 500;
+}
+
+.soil-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.5rem;
+  margin: 0.65rem 0;
+}
+
+.soil-metric {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid #f5d0fe;
+  border-radius: var(--border-radius-sm);
+  padding: 0.45rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-label {
+  font-size: 0.7rem;
+  color: #86198f;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.metric-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #4a044e;
+  line-height: 1.2;
+  margin: 0.1rem 0;
+}
+
+.metric-sub {
+  font-size: 0.72rem;
+  color: #a21caf;
+  font-weight: 500;
+}
+
+.soil-risk-text {
+  font-size: 0.82rem;
+  color: #701a75;
+  font-weight: 500;
+  margin-top: 0.4rem;
+  border-top: 1px dashed #f0abfc;
+  padding-top: 0.4rem;
+}
+
+.guidance-block.soil-block {
+  border-left: 4px solid #c026d3;
+  background: #fdf4ff;
+}
+
+.guidance-block.soil-block .block-title {
+  color: #86198f;
+}

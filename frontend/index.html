@@ -309,6 +309,45 @@
             <p class="weather-risk-text" id="weather-risk-text">High humidity favors foliar fungal spore dispersal.</p>
           </div>
 
+          <!-- Soil Health Microclimate & Baseline Card (Synthetic Data) -->
+          <div class="soil-box" id="soil-box">
+            <div class="soil-header">
+              <div class="soil-header-left">
+                <span class="soil-icon">🪴</span>
+                <div>
+                  <div class="soil-title-row">
+                    <strong id="txt-soil-heading">Soil Health Profile</strong>
+                    <span class="badge-synthetic" id="badge-synthetic" title="Demonstration baseline data for academic illustration">🧪 Synthetic Demonstration</span>
+                  </div>
+                  <div class="soil-type-label" id="soil-type-label">Medium Black Soil (Vertisol)</div>
+                </div>
+              </div>
+            </div>
+            <div class="soil-grid">
+              <div class="soil-metric">
+                <span class="metric-label" id="lbl-soil-ph">Soil pH</span>
+                <span class="metric-val" id="val-soil-ph">7.2</span>
+                <span class="metric-sub" id="sub-soil-ph">Optimal Neutral</span>
+              </div>
+              <div class="soil-metric">
+                <span class="metric-label" id="lbl-soil-moisture">Moisture</span>
+                <span class="metric-val" id="val-soil-moisture">24.5%</span>
+                <span class="metric-sub" id="sub-soil-moisture">Field Capacity</span>
+              </div>
+              <div class="soil-metric">
+                <span class="metric-label" id="lbl-soil-npk">Available N-P-K</span>
+                <span class="metric-val" id="val-soil-npk">185-22-310</span>
+                <span class="metric-sub" id="sub-soil-npk">kg/ha (ICAR Rating)</span>
+              </div>
+              <div class="soil-metric">
+                <span class="metric-label" id="lbl-soil-carbon">Organic Carbon</span>
+                <span class="metric-val" id="val-soil-carbon">0.58%</span>
+                <span class="metric-sub" id="sub-soil-carbon">Medium</span>
+              </div>
+            </div>
+            <p class="soil-risk-text" id="soil-risk-text">Soil parameters within regional equilibrium with moderate disease vulnerability.</p>
+          </div>
+
           <!-- Audio Read Aloud Player for Full Advisory -->
           <div class="audio-banner" id="audio-banner">
             <button type="button" class="btn-audio" id="tts-btn">
@@ -324,6 +363,11 @@
               <h4 class="block-title"><span class="icon">📖</span> <span id="txt-explanation-title">Explanation</span>
               </h4>
               <p class="block-content" id="guidance-explanation"></p>
+            </div>
+
+            <div class="guidance-block soil-block" id="block-soil">
+              <h4 class="block-title"><span class="icon">🪴</span> <span id="txt-soil-title">Soil Health & Nutrient Impact</span></h4>
+              <p class="block-content" id="guidance-soil"></p>
             </div>
 
             <div class="guidance-block highlight-block">

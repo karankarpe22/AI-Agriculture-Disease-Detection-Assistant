@@ -178,27 +178,43 @@ The weather module queries real-time meteorological conditions by city or coordi
 
 ---
 
-## 10. Gemini Integration & Marathi Support
+## 10. Synthetic Soil Health Agent & Agro-Climatic Dataset
 
-- Uses official Google GenAI SDK (`google-genai`).
-- System prompt enforces:
-  1. Do NOT claim image diagnosis; take classifier output as given.
-  2. Ground recommendations strictly in the retrieved RAG evidence.
-  3. Integrate current weather factors.
-  4. Never invent pesticide dosages.
-  5. Support fluent **English** and **Marathi (मराठी)**.
-- Offline Fallback: If `GEMINI_API_KEY` is not provided, an integrated evidence synthesis engine compiles the exact RAG citations and weather warnings directly into structured guidance.
+The **Soil Health Agent** (`src/soil/soil_service.py`) automates regional soil profile analysis without demanding manual numeric entry from the farmer:
+- **Zero Farmer Burden**: Farmer selects location (e.g. Pune, Akurdi, Nashik, Nagpur); the agent hierarchically matches agro-climatic baseline data automatically.
+- **Dataset (`data/soil/synthetic_soil_records.json` & `.csv`, v1.0.0-synthetic-demo)**:
+  - 12 curated baseline records covering Maharashtra agro-climatic zones (Western Maharashtra, Scarcity Zone, Khandesh, Vidarbha, Marathwada, and state benchmarks).
+  - Plausible agricultural parameters: `soil_ph`, `soil_moisture_percent`, `nitrogen_kg_ha`, `phosphorus_kg_ha`, `potassium_kg_ha`, `organic_carbon_percent`, `electrical_conductivity_ds_m`, `soil_type`, and `drainage_class`.
+- **Derived Agronomic Interpretation**: Computes pH categorization, moisture regimes, qualitative N-P-K ratings, and localized disease-soil interactions in English and Marathi.
+- **Academic & Scientific Integrity Disclosure**: Every record, UI badge, and API response explicitly carries `data_type="synthetic"`. Simulated demonstration baseline values are never misrepresented as real laboratory core samples or used for unsupported chemical prescriptions.
 
 ---
 
-## 11. Voice Accessibility (Speech-to-Text & Text-to-Speech)
+## 11. Tripartite Gemini Integration & Marathi Support
+
+The final LLM consultation synthesizes three pillars with equal prominence:
+1. **Crop Disease Context**: MobileNetV3 classification, prediction confidence, and top ICAR research evidence chunks.
+2. **Microclimate Weather Context**: Live Open-Meteo temperature, relative humidity, precipitation, and vector warnings.
+3. **Soil Health Context**: Agro-climatic pH, volumetric root-zone moisture, N-P-K macronutrient status, and synthetic disclosure.
+
+- System prompt enforces:
+  1. Summarize the biological relationship between disease, weather, and soil conditions.
+  2. Ground recommendations strictly in retrieved ICAR evidence.
+  3. Never fabricate pesticide dosages or claim unsupported fertilizer prescriptions.
+  4. Explicitly disclose that soil values are synthetic demonstration data.
+  5. Deliver bilingual outputs in fluent **English** and **Marathi (मराठी)**.
+- **Offline Fallback**: If `GEMINI_API_KEY` is unavailable or exhausted, an integrated semantic evidence engine compiles the exact RAG citations, weather warnings, and soil health interpretation directly into structured guidance.
+
+---
+
+## 12. Voice Accessibility (Speech-to-Text & Text-to-Speech)
 
 - **Speech-to-Text**: Native browser Web Speech API (`webkitSpeechRecognition`) supporting Marathi (`mr-IN`) and English (`en-IN`).
 - **Text-to-Speech**: Modular `gTTS` audio generation via `POST /tts` endpoint, streaming MP3 audio directly to the frontend player.
 
 ---
 
-## 12. Quick Start & Execution Guide
+## 13. Quick Start & Execution Guide
 
 ### Prerequisites
 - Python 3.10 - 3.13 (Tested on Python 3.12/3.13 on Windows).
@@ -253,7 +269,7 @@ pytest -v
 
 ---
 
-## 13. Academic Limitations & Future Work
+## 14. Academic Limitations & Future Work
 
 1. **Controlled vs. Field Images**: PlantVillage photos were captured under controlled laboratory settings. Real farm imagery with soil clutter, mixed lighting, and multiple leaves requires external field validation before commercial deployment.
 2. **Confidence Calibration**: Raw softmax confidence does not equal true posterior probability. While temperature scaling and low-confidence thresholds help, expert verification remains necessary.
@@ -262,7 +278,7 @@ pytest -v
 
 ---
 
-## 14. Project Specification & Architectural Documentation
+## 15. Project Specification & Architectural Documentation
 
 For in-depth engineering documentation, architecture diagrams, technical specifications, and development rules, refer to the project specification suite:
 
