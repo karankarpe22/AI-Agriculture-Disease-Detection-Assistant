@@ -285,6 +285,9 @@
             <audio id="guidance-audio" controls style="display: none;"></audio>
           </div>
 
+          <!-- Structured Guidance Sections Container -->
+          <div class="guidance-sections" id="guidance-sections">
+
           <!-- =================================================================
                SECTION 1: Integrated Summary
                ================================================================= -->
@@ -341,6 +344,10 @@
 
             <!-- Pathological Explanation Body -->
             <div class="guidance-block" id="block-explanation">
+              <h4 class="block-sub-title">
+                <span class="icon">📖</span>
+                <span id="txt-explanation-title">Diagnostic Pathology & Symptoms</span>
+              </h4>
               <div class="block-content markdown-body" id="guidance-explanation"></div>
             </div>
 
@@ -423,6 +430,10 @@
                 </div>
                 <p class="soil-risk-text" id="soil-risk-text">Soil parameters within regional equilibrium with moderate disease vulnerability.</p>
                 <div class="guidance-block soil-block" id="block-soil">
+                  <h4 class="block-sub-title">
+                    <span class="icon">🪴</span>
+                    <span id="txt-soil-title">Soil Nutrient Analysis</span>
+                  </h4>
                   <div class="block-content markdown-body" id="guidance-soil"></div>
                 </div>
               </div>
@@ -496,6 +507,8 @@
               </div>
             </div>
           </div>
+
+          </div> <!-- /.guidance-sections -->
 
           <!-- Sources & Citations Drawer -->
           <div class="sources-box" id="sources-box">

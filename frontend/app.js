@@ -717,7 +717,7 @@ function setLanguage(lang) {
   document.getElementById("txt-qa-answer-title").textContent = t.qaAnswerTitle;
   document.getElementById("txt-qa-audio").textContent = t.listenAnswer;
 
-  document.getElementById("txt-explanation-title").textContent = t.explanationTitle;
+  const expTitleEl = document.getElementById("txt-explanation-title"); if (expTitleEl) expTitleEl.textContent = t.explanationTitle;
   document.getElementById("txt-management-title").textContent = t.managementTitle;
   document.getElementById("txt-prevention-title").textContent = t.preventionTitle;
   document.getElementById("txt-precautions-title").textContent = t.precautionsTitle;
@@ -1427,7 +1427,7 @@ function renderResults(data, options = {}) {
     diagnosisBanner.style.display = "none";
     weatherBox.style.display = "none";
     if (soilBox) soilBox.style.display = "none";
-    guidanceSections.style.display = "none";
+    if (guidanceSections) guidanceSections.style.display = "none";
     qaAnswerBox.style.display = "none";
     gradcamBox.style.display = "none";
     followupCard.style.display = "none";
@@ -1438,7 +1438,7 @@ function renderResults(data, options = {}) {
   diagnosisBanner.style.display = "block";
   weatherBox.style.display = "block";
   if (soilBox) soilBox.style.display = "block";
-  guidanceSections.style.display = "flex";
+  if (guidanceSections) guidanceSections.style.display = "flex";
   followupCard.style.display = "block";
 
   // 1. Resolve Crop and Disease Names for active language
