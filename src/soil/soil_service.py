@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, Field, field_validator
@@ -16,6 +17,69 @@ logger = logging.getLogger("src.soil.soil_service")
 
 DATASET_VERSION = "1.0.0-synthetic-demo"
 DEFAULT_DATASET_PATH = Path("data/soil/synthetic_soil_records.json")
+
+# Regional sub-basin and taluka alias mapping to parent districts
+ALIAS_MAP: dict[str, str] = {
+    "akurdi": "pune",
+    "pimpri": "pune",
+    "chinchwad": "pune",
+    "baramati": "pune",
+    "hadapsar": "pune",
+    "niphad": "nashik",
+    "malegaon": "nashik",
+    "dindori": "nashik",
+    "pandharpur": "solapur",
+    "barshi": "solapur",
+    "katol": "nagpur",
+    "saoner": "nagpur",
+    "karveer": "kolhapur",
+    "gadhinglaj": "kolhapur",
+}
+
+# Canonical crop normalization to eliminate accidental substring collisions
+CROP_SYNONYMS: dict[str, str] = {
+    "tomato": "tomato",
+    "potato": "potato",
+    "bell pepper": "bell pepper",
+    "pepper, bell": "bell pepper",
+    "pepper": "bell pepper",
+    "capsicum": "bell pepper",
+    "general": "general",
+    "general / solanaceae": "general",
+    "all": "general",
+    "onion": "onion",
+    "cotton": "cotton",
+    "soybean": "soybean",
+    "soya": "soybean",
+    "rice": "rice",
+    "paddy": "rice",
+    "sugarcane": "sugarcane",
+}
+
+
+def _normalize_text(val: str | None) -> str:
+    """Normalize text by stripping whitespace and converting to lowercase."""
+    if not val:
+        return ""
+    return re.sub(r"\s+", " ", str(val).strip().lower())
+
+
+def _normalize_crop(crop: str | None) -> str:
+    """Normalize crop name to canonical form to prevent accidental substring matching."""
+    cleaned = _normalize_text(crop)
+    if not cleaned:
+        return ""
+    return CROP_SYNONYMS.get(cleaned, cleaned)
+
+
+def _crops_match(user_crop: str, record_crop: str) -> bool:
+    """Check if normalized crops match exactly, avoiding accidental substring collisions."""
+    u = _normalize_crop(user_crop)
+    r = _normalize_crop(record_crop)
+    if not u or not r:
+        return False
+    return u == r
+
 
 UNITS = {
     "soil_ph": "pH scale (0-14)",
@@ -113,7 +177,7 @@ class SoilHealthService:
             electrical_conductivity_ds_m=0.40,
             drainage_class="Moderately well-drained",
             is_fallback=True,
-            match_method="regional_benchmark",
+            match_method="in_memory_fallback",
         )
 
     def get_soil_health(
@@ -123,84 +187,114 @@ class SoilHealthService:
     ) -> dict[str, Any]:
         """Retrieve suitable synthetic soil record matching location and crop, with fallback.
         
-        Strategy:
-        1. Exact match on (location, crop)
-        2. Match on location with 'General' crop
-        3. Match on location with any available crop
-        4. Sub-basin / district alias match (e.g. Akurdi -> Pune)
-        5. Regional benchmark fallback with is_fallback=True
+        Deterministic Matching Priority:
+        1. Exact normalized location + exact crop (match_method: 'exact_location_crop', is_fallback: False)
+        2. Exact normalized location + General crop (match_method: 'exact_location_general', is_fallback: False)
+        3. Exact normalized district + exact crop (match_method: 'exact_district_crop', is_fallback: True)
+        4. Exact normalized district + General crop (match_method: 'exact_district_general', is_fallback: True)
+        5. Statewide synthetic baseline (match_method: 'regional_baseline', is_fallback: True)
+        6. In-memory fallback if dataset cannot be loaded (match_method: 'in_memory_fallback', is_fallback: True)
         """
-        loc_clean = (location or "").strip().lower()
-        crop_clean = (crop or "").strip().lower()
+        loc_clean = _normalize_text(location)
+        crop_clean = _normalize_crop(crop)
+        alias_district = ALIAS_MAP.get(loc_clean, "")
 
-        # Handle aliases / sub-basins
-        alias_map = {
-            "akurdi": "pune",
-            "pimpri": "pune",
-            "chinchwad": "pune",
-            "baramati": "pune",
-            "hadapsar": "pune",
-            "niphad": "nashik",
-            "malegaon": "nashik",
-            "dindori": "nashik",
-            "pandharpur": "solapur",
-            "barshi": "solapur",
-            "katol": "nagpur",
-            "saoner": "nagpur",
-            "karveer": "kolhapur",
-            "gadhinglaj": "kolhapur",
-        }
-        resolved_loc = alias_map.get(loc_clean, loc_clean)
+        district_targets: set[str] = set()
+        if loc_clean:
+            district_targets.add(loc_clean)
+        if alias_district:
+            district_targets.add(alias_district)
 
         matched_record: dict[str, Any] | None = None
-        match_method = "fallback"
+        match_method: str = "regional_baseline"
+        is_fallback: bool = True
 
-        if resolved_loc:
-            # 1. Exact match (location + crop)
-            for r in self.records:
-                r_loc = r.get("location", "").lower()
-                r_crop = r.get("crop_type", "").lower()
-                if (r_loc == loc_clean or r_loc == resolved_loc) and crop_clean and crop_clean in r_crop:
-                    matched_record = dict(r)
-                    match_method = "exact_location_crop"
-                    break
+        # Check if records are loaded
+        if not self.records:
+            benchmark = self._create_default_benchmark().model_dump()
+            benchmark["match_method"] = "in_memory_fallback"
+            benchmark["is_fallback"] = True
+            benchmark["queried_location"] = location or ""
+            benchmark["queried_crop"] = crop or ""
+            benchmark["interpretation"] = self._interpret_soil_parameters(benchmark)
+            return benchmark
 
-            # 2. Match on location with 'General'
-            if not matched_record:
-                for r in self.records:
-                    r_loc = r.get("location", "").lower()
-                    r_crop = r.get("crop_type", "").lower()
-                    if (r_loc == loc_clean or r_loc == resolved_loc) and r_crop == "general":
-                        matched_record = dict(r)
-                        match_method = "location_general"
-                        break
+        # 1. Exact normalized location + exact crop
+        if loc_clean and crop_clean and crop_clean != "general":
+            cands = [
+                r for r in self.records
+                if _normalize_text(r.get("location")) == loc_clean and _crops_match(crop_clean, r.get("crop_type"))
+            ]
+            if cands:
+                cands.sort(key=lambda x: str(x.get("record_id", "")))
+                matched_record = dict(cands[0])
+                match_method = "exact_location_crop"
+                is_fallback = False
 
-            # 3. Match on location with any crop
-            if not matched_record:
-                for r in self.records:
-                    r_loc = r.get("location", "").lower()
-                    if r_loc == loc_clean or r_loc == resolved_loc:
-                        matched_record = dict(r)
-                        match_method = "location_default"
-                        break
+        # 2. Exact normalized location + General crop
+        if not matched_record and loc_clean:
+            cands = [
+                r for r in self.records
+                if _normalize_text(r.get("location")) == loc_clean and _normalize_crop(r.get("crop_type")) == "general"
+            ]
+            if cands:
+                cands.sort(key=lambda x: str(x.get("record_id", "")))
+                matched_record = dict(cands[0])
+                match_method = "exact_location_general"
+                is_fallback = False
 
-        # 4. Regional benchmark fallback
+        # 3. Exact normalized district + exact crop
+        if not matched_record and district_targets and crop_clean and crop_clean != "general":
+            cands = [
+                r for r in self.records
+                if _normalize_text(r.get("district")) in district_targets and _crops_match(crop_clean, r.get("crop_type"))
+            ]
+            if cands:
+                # Deterministic sorting: prefer records whose location matches target, then by record_id
+                cands.sort(key=lambda x: (
+                    0 if _normalize_text(x.get("location")) in district_targets else 1,
+                    str(x.get("record_id", ""))
+                ))
+                matched_record = dict(cands[0])
+                match_method = "exact_district_crop"
+                is_fallback = True
+
+        # 4. Exact normalized district + General crop
+        if not matched_record and district_targets:
+            cands = [
+                r for r in self.records
+                if _normalize_text(r.get("district")) in district_targets and _normalize_crop(r.get("crop_type")) == "general"
+            ]
+            if cands:
+                cands.sort(key=lambda x: (
+                    0 if _normalize_text(x.get("location")) in district_targets else 1,
+                    str(x.get("record_id", ""))
+                ))
+                matched_record = dict(cands[0])
+                match_method = "exact_district_general"
+                is_fallback = True
+
+        # 5. Statewide synthetic baseline
         if not matched_record:
-            for r in self.records:
-                if "default" in r.get("record_id", "").lower():
-                    matched_record = dict(r)
-                    match_method = "regional_benchmark"
-                    break
+            baseline_cands = [
+                r for r in self.records
+                if r.get("record_id") == "SYN-SOIL-MH-DEFAULT-001" or "default" in str(r.get("record_id", "")).lower()
+            ]
+            if baseline_cands:
+                matched_record = dict(baseline_cands[0])
+                match_method = "regional_baseline"
+                is_fallback = True
+            else:
+                # 6. In-memory fallback if dataset is empty or baseline record missing
+                matched_record = self._create_default_benchmark().model_dump()
+                match_method = "in_memory_fallback"
+                is_fallback = True
 
-        if not matched_record:
-            matched_record = self._create_default_benchmark().model_dump()
-            match_method = "regional_benchmark"
-
-        # Attach matching metadata
+        # Attach transparent diagnostic metadata
         matched_record["match_method"] = match_method
-        matched_record["is_fallback"] = match_method in ["regional_benchmark", "fallback"]
-        if location and not matched_record.get("queried_location"):
-            matched_record["queried_location"] = location
+        matched_record["is_fallback"] = is_fallback
+        matched_record["queried_location"] = location or ""
+        matched_record["queried_crop"] = crop or ""
 
         # Generate agronomic interpretation
         interpretation = self._interpret_soil_parameters(matched_record)

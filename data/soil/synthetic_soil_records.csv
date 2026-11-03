@@ -11,3 +11,91 @@ SYN-SOIL-MH-SOL-001,Solapur,Solapur,Western Maharashtra Scarcity Zone (Semi-Arid
 SYN-SOIL-MH-KOL-001,Kolhapur,Kolhapur,South Maharashtra Sub-Montane and Transition Zone,Tomato,Reddish Lateritic to Alluvial Clay Loam,6.2,31.0,240.0,29.0,290.0,0.85,0.28,Well-drained,synthetic,1.0.0-synthetic-demo
 SYN-SOIL-MH-CSN-001,Chhatrapati Sambhajinagar,Chhatrapati Sambhajinagar,Central Maharashtra Semi-Arid Plateau (Godavari Basin),Bell pepper,Medium Vertisol (Black Soil),7.4,23.0,175.0,20.0,280.0,0.5,0.44,Moderately well-drained,synthetic,1.0.0-synthetic-demo
 SYN-SOIL-MH-DEFAULT-001,Maharashtra Regional Baseline,General Maharashtra Agricultural Region,Deccan Plateau Agro-Climatic Baseline,General,Standard Deccan Vertisol (Medium Black Agricultural Soil),7.0,25.0,180.0,22.0,300.0,0.55,0.4,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-RAT-001,Ratnagiri,Ratnagiri,South Konkan Coastal Zone,Tomato,Coastal Lateritic Clay Loam,5.9,29.5,215.0,18.5,265.0,0.88,0.28,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-RAT-002,Chiplun,Ratnagiri,South Konkan Coastal Zone,Bell pepper,Deep Lateritic Red Loam,6.2,31.0,230.0,21.0,280.0,0.92,0.32,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-RAT-003,Dapoli,Ratnagiri,South Konkan Coastal Zone,General,Gravelly Lateritic Plateau Soil,5.8,27.5,195.0,16.0,250.0,0.82,0.25,Excessively well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SIN-001,Sindhudurg,Sindhudurg,South Konkan Coastal Zone,Potato,Coastal Alluvial Transition Loam,6.1,32.5,225.0,23.5,290.0,0.96,0.35,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SIN-002,Kankavli,Sindhudurg,South Konkan Coastal Zone,Tomato,Valley Humus-Rich Sandy Loam,6.3,30.0,240.0,25.0,275.0,0.9,0.3,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SIN-003,Sawantwadi,Sindhudurg,South Konkan Coastal Zone,General,Reddish Lateritic Silty Clay,5.7,28.5,205.0,17.5,260.0,0.85,0.26,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAL-001,Palghar,Palghar,North Konkan Coastal Zone,Tomato,Coastal Alluvial Clay Loam,6.6,28.0,210.0,24.0,295.0,0.74,0.48,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAL-002,Dahanu,Palghar,North Konkan Coastal Zone,Bell pepper,Deltaic Sandy Clay Loam,6.8,26.5,220.0,27.5,310.0,0.78,0.52,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAL-003,Wada,Palghar,North Konkan Coastal Zone,General,Valley Coarse Alluvium,6.5,25.5,190.0,20.0,270.0,0.68,0.38,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-THA-001,Thane,Thane,North Konkan Coastal Zone,Tomato,Medium Clayey Alluvial Soil,6.7,27.5,205.0,22.0,285.0,0.72,0.42,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-THA-002,Kalyan,Thane,North Konkan Coastal Zone,General,Ulhas Basin Clay Loam,6.9,29.0,195.0,21.5,300.0,0.7,0.46,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-RAI-001,Alibag,Raigad,North Konkan Coastal Zone,Rice,Coastal Saline-Alluvial Clay,6.4,34.0,235.0,26.0,320.0,0.86,0.68,Poorly to imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-RAI-002,Panvel,Raigad,North Konkan Coastal Zone,Potato,Riverine Sandy Alluvium,6.5,28.5,215.0,25.0,280.0,0.75,0.44,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-RAI-003,Roha,Raigad,North Konkan Coastal Zone,General,Kundalika Basin Loamy Soil,6.3,27.0,200.0,22.5,275.0,0.73,0.36,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-MAH-001,Mahabaleshwar,Satara,Western Ghat Zone,Potato,High-Elevation Humus-Rich Red Loam,5.6,33.5,245.0,15.0,290.0,1.1,0.22,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-MAH-002,Mahabaleshwar,Satara,Western Ghat Zone,Bell pepper,Lateritic Plateau Clay Loam,5.9,31.5,235.0,18.0,305.0,1.05,0.24,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-IGA-001,Igatpuri,Nashik,Western Ghat Zone,Tomato,Ghat Escarpment Coarse Reddish Loam,6.0,29.0,210.0,17.5,270.0,0.85,0.26,Excessively well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-LON-001,Lonavala,Pune,Western Ghat Zone,General,Sahyadri Crest Weathered Loam,5.8,30.5,200.0,16.0,260.0,0.9,0.2,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-KOL-002,Kolhapur,Kolhapur,Sub-Montane Zone,Potato,Panchganga Alluvial Clay Loam,6.5,29.0,235.0,30.0,315.0,0.82,0.34,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-KOL-003,Shirol,Kolhapur,Sub-Montane Zone,Bell pepper,Deep Vertic Silt Loam,6.8,28.0,225.0,28.0,330.0,0.76,0.38,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-KOL-004,Karveer,Kolhapur,Sub-Montane Zone,Sugarcane,Heavy Alluvial Vertisol,7.1,33.0,265.0,35.0,390.0,0.94,0.42,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SAN-001,Sangli,Sangli,Sub-Montane Zone,Tomato,Krishna Valley Medium Black Loam,7.0,27.0,215.0,26.5,340.0,0.72,0.4,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SAN-002,Miraj,Sangli,Sub-Montane Zone,Sugarcane,Deep Canal-Command Vertisol,7.3,32.0,250.0,32.0,375.0,0.8,0.46,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SAT-001,Satara,Satara,Sub-Montane Zone,Tomato,Venna Valley Medium Vertisol,6.8,26.5,205.0,25.0,310.0,0.7,0.36,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SAT-002,Karad,Satara,Sub-Montane Zone,Potato,Koyna-Krishna Confluence Loam,6.7,28.5,220.0,27.0,325.0,0.75,0.38,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PUN-003,Pune,Pune,Plain Zone,Bell pepper,Medium Vertisol (Clayey Loam),7.1,25.0,195.0,23.0,315.0,0.6,0.4,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PUN-004,Haveli,Pune,Plain Zone,Onion,Sandy Clay Loam with Gravel,7.3,23.5,185.0,24.5,325.0,0.58,0.44,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BAR-001,Baramati,Pune,Plain Zone,Tomato,Deep Black Canal-Command Vertisol,7.4,26.0,210.0,25.5,350.0,0.64,0.48,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BAR-002,Baramati,Pune,Plain Zone,General,Medium Black Vertic Soil,7.2,24.0,180.0,21.0,305.0,0.56,0.42,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NAS-003,Nashik,Nashik,Plain Zone,Potato,Godavari Alluvial Silt Loam,6.8,27.0,215.0,28.5,300.0,0.66,0.38,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NIP-001,Niphad,Nashik,Plain Zone,Onion,Deep Vertic Clay Loam (Onion Belt),7.2,24.5,200.0,26.0,340.0,0.62,0.45,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-DIN-001,Dindori,Nashik,Plain Zone,General,Coarse Reddish Black Soil,6.7,23.0,175.0,19.5,280.0,0.54,0.34,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AHM-001,Ahmednagar,Ahmednagar,Plain Zone,Tomato,Medium Black Vertisol,7.5,22.5,185.0,21.0,310.0,0.52,0.5,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AHM-002,Sangamner,Ahmednagar,Plain Zone,Onion,Pravara Basin Clay Loam,7.3,23.0,195.0,24.0,330.0,0.58,0.46,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AHM-003,Rahuri,Ahmednagar,Plain Zone,General,Calcareous Medium Black Soil,7.6,21.5,170.0,18.5,295.0,0.48,0.54,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SOL-002,Solapur,Solapur,Scarcity Zone,Tomato,Medium Calcareous Black Soil,7.9,18.0,155.0,17.5,275.0,0.42,0.65,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SOL-003,Solapur,Solapur,Scarcity Zone,Onion,Sandy Clay Loam with Calcareous Murrum,7.8,17.5,160.0,19.0,290.0,0.45,0.6,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-SOL-004,Barshi,Solapur,Scarcity Zone,General,Shallow Black Vertic Soil,8.0,16.0,145.0,15.5,260.0,0.38,0.7,Well-drained with high permeability,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAN-001,Pandharpur,Solapur,Scarcity Zone,Bell pepper,Bhima Basin Alluvial-Vertisol Mix,7.7,20.0,175.0,21.0,310.0,0.49,0.58,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAN-002,Pandharpur,Solapur,Scarcity Zone,Potato,Bhima River Silt Clay Loam,7.5,21.0,180.0,23.0,295.0,0.52,0.52,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JAT-001,Jath,Sangli,Scarcity Zone,Potato,Shallow Reddish-Black Gravelly Soil,7.6,15.5,135.0,14.0,240.0,0.34,0.55,Well-drained with high permeability,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JAT-002,Atpadi,Sangli,Scarcity Zone,General,Coarse Drought-Prone Murrum Soil,7.8,14.5,125.0,12.5,225.0,0.32,0.5,Excessively well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-OSM-001,Dharashiv,Dharashiv,Scarcity Zone,Tomato,Medium Black Balaghat Plateau Soil,7.7,19.0,165.0,18.0,285.0,0.46,0.52,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-OSM-002,Tuljapur,Dharashiv,Scarcity Zone,General,Shallow Calcareous Vertisol,7.9,17.0,140.0,15.0,255.0,0.4,0.62,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BEE-001,Beed,Beed,Scarcity Zone,Bell pepper,Medium Vertisol (Clayey Loam),7.6,18.5,170.0,19.5,290.0,0.44,0.56,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BEE-002,Ashti,Beed,Scarcity Zone,Cotton,Deep Black Drought-Prone Vertisol,7.8,19.5,150.0,16.5,300.0,0.41,0.64,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-CSN-002,Chhatrapati Sambhajinagar,Chhatrapati Sambhajinagar,Central Maharashtra Plateau Zone,Tomato,Godavari Basin Medium Vertisol,7.5,23.5,180.0,22.0,295.0,0.52,0.46,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-CSN-003,Paithan,Chhatrapati Sambhajinagar,Central Maharashtra Plateau Zone,General,Jayakwadi Canal Command Vertisol,7.6,25.0,190.0,23.5,315.0,0.55,0.5,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JAL-001,Jalgaon,Jalgaon,Central Maharashtra Plateau Zone,Tomato,Tapi Valley Alluvial Deep Vertisol,7.7,24.5,185.0,21.0,340.0,0.54,0.52,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JAL-002,Bhusawal,Jalgaon,Central Maharashtra Plateau Zone,Cotton,Heavy Black Cotton Vertisol,7.8,26.0,175.0,19.5,360.0,0.5,0.58,Imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JAL-003,Chalisgaon,Jalgaon,Central Maharashtra Plateau Zone,General,Girna Basin Clay Loam,7.4,22.0,165.0,18.0,290.0,0.48,0.42,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-DHU-001,Dhule,Dhule,Central Maharashtra Plateau Zone,Bell pepper,Medium Vertic Silt Loam,7.3,23.0,190.0,24.0,305.0,0.53,0.44,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-DHU-002,Shirpur,Dhule,Central Maharashtra Plateau Zone,Potato,Tapi Alluvial Sandy Clay Loam,7.1,25.5,205.0,26.5,310.0,0.57,0.4,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NAN-001,Nandurbar,Nandurbar,Central Maharashtra Plateau Zone,Tomato,Satpura Foothills Red-Black Soil,6.9,22.5,170.0,20.0,275.0,0.51,0.36,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NAN-002,Shahada,Nandurbar,Central Maharashtra Plateau Zone,Potato,Tapi River Fertile Silt Loam,7.2,26.5,210.0,27.0,320.0,0.6,0.42,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JLN-001,Jalna,Jalna,Central Maharashtra Plateau Zone,Tomato,Medium Vertisol (Clayey Loam),7.6,23.0,180.0,21.5,300.0,0.5,0.48,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-JLN-002,Ambad,Jalna,Central Maharashtra Plateau Zone,Soybean,Fertile Deep Black Vertisol,7.7,25.0,170.0,20.0,330.0,0.54,0.5,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAR-001,Parbhani,Parbhani,Central Maharashtra Plateau Zone,Bell pepper,Deep Vertic Clay Soil,7.8,24.0,185.0,22.0,325.0,0.51,0.54,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-PAR-002,Gangakhed,Parbhani,Central Maharashtra Plateau Zone,Soybean,Godavari Alluvial Vertisol,7.5,26.0,180.0,23.0,340.0,0.56,0.46,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NED-001,Nanded,Nanded,Central Maharashtra Plateau Zone,Tomato,Medium Deep Black Vertisol,7.6,24.0,190.0,23.0,310.0,0.53,0.45,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NED-002,Loha,Nanded,Central Maharashtra Plateau Zone,Cotton,Heavy Clay Cotton Vertisol,7.9,25.5,170.0,19.0,350.0,0.49,0.56,Imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-LAT-001,Latur,Latur,Central Maharashtra Plateau Zone,Potato,Manjara Basin Silt Clay Loam,7.4,24.5,200.0,25.0,305.0,0.55,0.44,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-LAT-002,Udgir,Latur,Central Maharashtra Plateau Zone,Soybean,Medium Vertisol (Clayey Loam),7.6,25.0,175.0,21.0,320.0,0.52,0.48,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-HIN-001,Hingoli,Hingoli,Central Maharashtra Plateau Zone,Bell pepper,Kayadhu Basin Medium Vertisol,7.3,23.5,195.0,24.5,315.0,0.54,0.42,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-HIN-002,Basmath,Hingoli,Central Maharashtra Plateau Zone,General,Deep Clay Loam Soil,7.5,24.0,180.0,20.5,295.0,0.5,0.46,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-NAG-003,Nagpur,Nagpur,Central Vidarbha Zone,Potato,Sandy Clay Vertic Transition Loam,7.2,28.5,200.0,26.0,320.0,0.58,0.42,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-KAT-001,Katol,Nagpur,Central Vidarbha Zone,Bell pepper,Orange Belt Heavy Black Vertisol,7.7,31.0,210.0,28.0,370.0,0.62,0.5,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-WAR-001,Wardha,Wardha,Central Vidarbha Zone,Tomato,Dham Valley Deep Vertisol,7.6,29.5,185.0,21.5,350.0,0.5,0.54,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-WAR-002,Hinganghat,Wardha,Central Vidarbha Zone,Potato,Wena Basin Silt Clay Loam,7.3,27.5,195.0,25.0,330.0,0.55,0.46,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AMR-001,Amravati,Amravati,Central Vidarbha Zone,Tomato,Purna Basin Deep Black Vertisol,7.8,32.0,175.0,20.0,365.0,0.48,0.62,Imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AMR-002,Achalpur,Amravati,Central Vidarbha Zone,Bell pepper,Melghat Foothills Clay Loam,7.1,26.5,205.0,26.0,325.0,0.64,0.38,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AKO-001,Akola,Akola,Central Vidarbha Zone,Bell pepper,Deep Black Cotton Soil,8.0,30.5,180.0,19.0,380.0,0.46,0.66,Imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-AKO-002,Akot,Akola,Central Vidarbha Zone,Soybean,Fertile Clayey Vertisol,7.7,28.0,170.0,22.0,345.0,0.52,0.52,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-YAV-001,Yavatmal,Yavatmal,Central Vidarbha Zone,Tomato,Medium Black Vertisol,7.6,27.0,185.0,21.0,330.0,0.49,0.5,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-YAV-002,Pusad,Yavatmal,Central Vidarbha Zone,Potato,Penganga Basin Silt Loam,7.3,26.0,195.0,24.0,315.0,0.54,0.44,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-YAV-003,Wani,Yavatmal,Central Vidarbha Zone,Cotton,Heavy Vertisol Cotton Soil,7.9,29.0,165.0,18.5,360.0,0.45,0.6,Imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BUL-001,Buldhana,Buldhana,Central Vidarbha Zone,Potato,Ajanta Plateau Silt Clay Loam,7.4,25.0,190.0,23.5,310.0,0.51,0.48,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BUL-002,Khamgaon,Buldhana,Central Vidarbha Zone,General,Medium Vertic Black Soil,7.7,26.5,175.0,19.5,325.0,0.47,0.54,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-WAS-001,Washim,Washim,Central Vidarbha Zone,Tomato,Fertile Black Vertisol,7.5,27.5,185.0,22.0,340.0,0.5,0.46,Moderately well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BHA-001,Bhandara,Bhandara,Eastern Vidarbha Zone,Rice,Wainganga Basin Sandy Clay Alluvium,6.3,33.0,220.0,25.0,280.0,0.72,0.28,Imperfectly drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BHA-002,Tumsar,Bhandara,Eastern Vidarbha Zone,Tomato,Sandy Loam Alluvial Soil,6.6,27.0,195.0,23.0,265.0,0.65,0.32,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-BHA-003,Sakoli,Bhandara,Eastern Vidarbha Zone,Potato,Yellowish-Red Sandy Loam,6.5,28.5,205.0,24.5,275.0,0.68,0.3,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-GON-001,Gondia,Gondia,Eastern Vidarbha Zone,Bell pepper,Bagh Basin Sandy Clay Loam,6.4,29.0,210.0,26.0,285.0,0.7,0.34,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-GON-002,Tirora,Gondia,Eastern Vidarbha Zone,Potato,Fine Sandy Loam Alluvium,6.7,27.5,200.0,23.5,260.0,0.64,0.28,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-CHA-001,Chandrapur,Chandrapur,Eastern Vidarbha Zone,Tomato,Wardha-Wainganga Mixed Red-Black Soil,6.9,26.0,185.0,21.0,295.0,0.58,0.38,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-CHA-002,Warora,Chandrapur,Eastern Vidarbha Zone,Potato,Sandy Clay Loam,6.8,25.5,190.0,22.5,280.0,0.56,0.36,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-GAD-001,Gadchiroli,Gadchiroli,Eastern Vidarbha Zone,Bell pepper,Forest Loam Red Soil,6.2,28.0,205.0,24.0,270.0,0.74,0.26,Well-drained,synthetic,1.0.0-synthetic-demo
+SYN-SOIL-MH-GAD-002,Armori,Gadchiroli,Eastern Vidarbha Zone,General,Wainganga Alluvial Loam,6.5,27.0,185.0,20.0,255.0,0.66,0.3,Well-drained,synthetic,1.0.0-synthetic-demo

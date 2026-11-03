@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+logger = logging.getLogger("src.rag.vector_store")
 
 # Lazy imports for fast startup
 SentenceTransformer = None
@@ -129,12 +132,12 @@ class AgriculturalRAG:
                 faiss_module = load_faiss()
                 self.index = faiss_module.read_index(str(self.index_file))
                 self.chunks = json.loads(self.chunks_file.read_text(encoding="utf-8"))
-                print(f"Loaded existing FAISS index with {len(self.chunks)} chunks.")
+                logger.info(f"Loaded existing FAISS index with {len(self.chunks)} chunks.")
                 return
             except Exception as e:
-                print(f"Error loading cached index ({e}), rebuilding...")
+                logger.warning(f"Error loading cached index ({e}), rebuilding...")
 
-        print("Building agricultural knowledge base index...")
+        logger.info("Building agricultural knowledge base index...")
         all_chunks: list[dict[str, Any]] = []
         md_files = list(self.kb_dir.glob("*.md"))
         if not md_files:
@@ -144,7 +147,7 @@ class AgriculturalRAG:
             docs = self.parse_markdown_document(f)
             all_chunks.extend(docs)
 
-        print(f"Extracted {len(all_chunks)} sections across {len(md_files)} documents.")
+        logger.info(f"Extracted {len(all_chunks)} sections across {len(md_files)} documents.")
 
         # Prepare composite text for embedding (incorporates crop & disease context)
         texts_to_embed = [
@@ -167,7 +170,30 @@ class AgriculturalRAG:
         self.cache_dir.mkdir(exist_ok=True)
         faiss_module.write_index(self.index, str(self.index_file))
         self.chunks_file.write_text(json.dumps(self.chunks, indent=2), encoding="utf-8")
-        print(f"FAISS index saved to {self.index_file} ({len(self.chunks)} chunks)")
+        logger.info(f"FAISS index saved to {self.index_file} ({len(self.chunks)} chunks)")
+
+    @staticmethod
+    def _build_composite_query(
+        crop: str | None = None,
+        disease: str | None = None,
+        question: str | None = None,
+    ) -> str:
+        """Formulate composite semantic query from crop, disease context, and farmer question."""
+        parts = []
+        if crop and crop.strip() and crop.strip().lower() not in ["general", "general / solanaceae"]:
+            parts.append(f"Crop: {crop.strip()}")
+        if disease and disease.strip() and disease.strip().lower() not in ["general agronomic inquiry", "healthy"]:
+            parts.append(f"Disease: {disease.strip()}")
+        if question and question.strip():
+            parts.append(f"Query: {question.strip()}")
+        return ". ".join(parts).strip()
+
+    @staticmethod
+    def _generate_chunk_id(chunk: dict[str, Any], index: int) -> str:
+        """Generate a stable, unique chunk identifier derived from source file and heading."""
+        base_name = Path(chunk.get("file", "chunk")).stem
+        heading_slug = re.sub(r"[^a-zA-Z0-9]+", "_", chunk.get("heading", "section")).strip("_").lower()
+        return f"ICAR_{base_name}_{heading_slug}_{index:02d}"
 
     def _score_chunk(
         self,
@@ -176,6 +202,7 @@ class AgriculturalRAG:
         disease: str | None,
         question: str | None,
     ) -> float:
+        """Keyword-based heuristic scoring (used ONLY as secondary fallback)."""
         score = 0.0
         c_crop = (chunk.get("crop") or "").lower()
         c_dis = (chunk.get("disease") or "").lower()
@@ -209,35 +236,129 @@ class AgriculturalRAG:
         disease: str | None = None,
         question: str | None = None,
         top_k: int = 3,
+        min_similarity: float = 0.35,
     ) -> list[dict[str, Any]]:
-        """Retrieve relevant agricultural evidence chunks based on disease and question."""
+        """Retrieve relevant agricultural evidence chunks using FAISS vector search with keyword fallback.
+        
+        Deterministic Retrieval Flow:
+        1. Formulate composite query text from crop, disease, and farmer question.
+        2. If query is empty, return empty list (no evidence).
+        3. Attempt primary vector similarity search via SentenceTransformer + FAISS index.search().
+        4. If vector search succeeds:
+           - Filter candidates by min_similarity threshold (default 0.35).
+           - Deduplicate sections using source file and heading.
+           - Tag each chunk with chunk_id, similarity_score, and retrieval_method='vector'.
+           - Return top_k unique chunks.
+        5. If FAISS index or encoder is unavailable, or search raises an exception:
+           - Log reason for fallback.
+           - Execute secondary keyword heuristic fallback via _score_chunk().
+           - Tag returned chunks with retrieval_method='keyword_fallback'.
+           - Return top_k unique chunks.
+        """
+        # Ensure index and chunks are loaded
         if not self.chunks:
-            self.build_index()
+            try:
+                self.build_index()
+            except Exception as e:
+                logger.warning(f"Could not load or build FAISS index: {e}")
 
-        if self.chunks:
-            scored = []
-            for idx, chunk in enumerate(self.chunks):
-                s = self._score_chunk(chunk, crop, disease, question)
-                scored.append((s, idx))
+        query_text = self._build_composite_query(crop, disease, question)
+        if not query_text:
+            logger.debug("Empty query provided to RAG retrieve(); returning empty evidence list.")
+            return []
 
-            scored.sort(key=lambda x: x[0], reverse=True)
+        results: list[dict[str, Any]] = []
+        vector_search_attempted = False
+        vector_search_succeeded = False
 
-            results = []
-            seen_headings = set()
-            for s, idx in scored:
-                chunk = self.chunks[idx].copy()
-                chunk["similarity_score"] = round(float(s), 4)
-                h_key = f"{chunk.get('file')}:{chunk.get('heading')}"
-                if h_key not in seen_headings:
+        # --- Primary Path: Vector Similarity Search via FAISS ---
+        if self.index is not None and self.chunks:
+            vector_search_attempted = True
+            try:
+                encoder = self._ensure_encoder()
+                if encoder is None:
+                    raise RuntimeError("SentenceTransformer encoder could not be initialized.")
+
+                query_vec = encoder.encode(
+                    [query_text],
+                    convert_to_numpy=True,
+                    normalize_embeddings=True,
+                )
+                query_vec = query_vec.astype(np.float32)
+
+                # Search candidate pool larger than top_k to allow heading deduplication
+                search_k = min(max(top_k * 4, 10), len(self.chunks))
+                distances, indices = self.index.search(query_vec, search_k)
+
+                seen_headings: set[str] = set()
+                for rank, (dist, idx) in enumerate(zip(distances[0], indices[0])):
+                    if idx < 0 or idx >= len(self.chunks):
+                        continue
+                    score = float(dist)
+                    if score < min_similarity:
+                        continue
+
+                    raw_chunk = self.chunks[idx]
+                    h_key = f"{raw_chunk.get('file', '')}:{raw_chunk.get('heading', '')}"
+                    if h_key in seen_headings:
+                        continue
                     seen_headings.add(h_key)
+
+                    chunk = raw_chunk.copy()
+                    chunk["chunk_id"] = self._generate_chunk_id(chunk, idx)
+                    chunk["similarity_score"] = round(score, 4)
+                    chunk["retrieval_method"] = "vector"
                     results.append(chunk)
-                if len(results) >= top_k:
-                    break
 
-            if results:
-                return results[:top_k]
+                    if len(results) >= top_k:
+                        break
 
-        return []
+                vector_search_succeeded = True
+            except Exception as e:
+                logger.warning(f"FAISS vector search failed ({e}); falling back to keyword heuristics.")
+                vector_search_succeeded = False
+
+        # --- Secondary Path: Keyword Heuristic Fallback ---
+        # Triggered ONLY when vector search could not run or raised an exception
+        if not vector_search_succeeded:
+            fallback_reason = "FAISS index or encoder unavailable" if not vector_search_attempted else "Vector search execution failed"
+            logger.warning(f"Executing keyword fallback ({fallback_reason}).")
+
+            if not self.chunks:
+                try:
+                    self.build_index()
+                except Exception as e:
+                    logger.error(f"Cannot load chunks for keyword fallback: {e}")
+                    return []
+
+            if self.chunks:
+                scored = []
+                for idx, chunk in enumerate(self.chunks):
+                    s = self._score_chunk(chunk, crop, disease, question)
+                    scored.append((s, idx))
+
+                scored.sort(key=lambda x: x[0], reverse=True)
+
+                seen_headings = set()
+                for s, idx in scored:
+                    if s <= 0.0:
+                        continue
+                    raw_chunk = self.chunks[idx]
+                    h_key = f"{raw_chunk.get('file', '')}:{raw_chunk.get('heading', '')}"
+                    if h_key in seen_headings:
+                        continue
+                    seen_headings.add(h_key)
+
+                    chunk = raw_chunk.copy()
+                    chunk["chunk_id"] = self._generate_chunk_id(chunk, idx)
+                    chunk["similarity_score"] = round(float(s), 4)
+                    chunk["retrieval_method"] = "keyword_fallback"
+                    results.append(chunk)
+
+                    if len(results) >= top_k:
+                        break
+
+        return results[:top_k]
 
     @staticmethod
     def get_sources_summary(evidence_list: list[dict[str, Any]]) -> list[dict[str, str]]:

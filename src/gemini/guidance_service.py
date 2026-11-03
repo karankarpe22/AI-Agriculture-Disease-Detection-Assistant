@@ -271,7 +271,7 @@ INPUT DATA (3 EQUAL PILLARS):
 - Farmer's Question: {question or 'What should I do to treat and protect my crop?'}
 
 RETRIEVED AGRICULTURAL EVIDENCE (ICAR / TNAU):
-{evidence_text if evidence_text else 'Standard ICAR Horticultural Practices'}
+{evidence_text if evidence_text else 'No specific ICAR research documents retrieved for this query. Advise general good agricultural hygiene and local extension consultation. Do NOT prescribe unverified chemical fungicides or pesticide dosages.'}
 
 Please return your response in JSON format with exactly TWO top-level objects: "en" and "mr":
 {{
