@@ -65,6 +65,7 @@ const I18N = {
     soilHeading: "Soil Health Profile",
     syntheticBadge: "🧪 Synthetic Demonstration",
     soilTitle: "Soil Health & Nutrient Impact",
+    soilUnavailable: "Soil data unavailable",
     lblSoilPh: "Soil pH",
     lblSoilMoisture: "Moisture",
     lblSoilNpk: "Available N-P-K",
@@ -146,6 +147,7 @@ const I18N = {
     soilHeading: "मृदा आरोग्य विश्लेषण",
     syntheticBadge: "🧪 प्रात्यक्षिक मृदा नोंद",
     soilTitle: "मृदा आरोग्य व पोषण समन्वय",
+    soilUnavailable: "मृदा माहिती उपलब्ध नाही",
     lblSoilPh: "जमिनीचा सामू (pH)",
     lblSoilMoisture: "मातीतील ओलावा",
     lblSoilNpk: "उपलब्ध नत्र-स्फुरद-पालाश",
@@ -389,7 +391,10 @@ function translateBlockToMarathi(section, data) {
     return `मोठ्या प्रमाणावर रासायनिक औषधांचा वापर करण्यापूर्वी आपल्या जवळच्या कृषी विज्ञान केंद्र (KVK) किंवा तालुका कृषी अधिकाऱ्यांशी संपर्क साधा.`;
   }
   if (section === "soil") {
-    return `मृदा आरोग्य विश्लेषण [प्रात्यक्षिक नोंद]: जमिनीतील सामू (pH) व पालाशचे योग्य प्रमाण पानांच्या पेशींना बळकटी देते. मातीत ओलावा जास्त असल्यास बुरशीच्या बीजाणूंचा फैलाव वेगाने होतो, त्यामुळे पाण्याचा निचरा योग्य ठेवा आणि जमिनीवर पाणी साचू देऊ नका. (टीप: ही प्रात्यक्षिक माहिती आहे; प्रत्यक्ष खतांच्या नियोजनासाठी अधिकृत माती परीक्षण पत्रिका वापरावी).`;
+    if (data?.soil && data.soil.soil_ph != null && !data.soil.error) {
+      return `मृदा आरोग्य विश्लेषण [प्रात्यक्षिक नोंद]: जमिनीतील सामू (pH) व पालाशचे योग्य प्रमाण पानांच्या पेशींना बळकटी देते. मातीत ओलावा जास्त असल्यास बुरशीच्या बीजाणूंचा फैलाव वेगाने होतो, त्यामुळे पाण्याचा निचरा योग्य ठेवा आणि जमिनीवर पाणी साचू देऊ नका. (टीप: ही प्रात्यक्षिक माहिती आहे; प्रत्यक्ष खतांच्या नियोजनासाठी अधिकृत माती परीक्षण पत्रिका वापरावी).`;
+    }
+    return `मृदा माहिती उपलब्ध नाही. कृपया पिकाच्या पानांवरील लक्षणे आणि स्थानिक हवामानानुसार योग्य फवारणी व निगा राखावी.`;
   }
   return "";
 }
@@ -1551,36 +1556,108 @@ function renderResults(data, options = {}) {
   }
 
   // 4b. Synthetic Soil Health Context
-  const s = data.soil || {};
-  const sInterp = s.interpretation || {};
+  const s = data.soil;
+  const hasSoilData = Boolean(
+    s &&
+    typeof s === "object" &&
+    s.soil_ph != null &&
+    !s.error &&
+    s.available !== false
+  );
+
   if (soilBox) {
     soilBox.style.display = "block";
-    if (soilTypeLabel) {
-      soilTypeLabel.textContent = isMr
-        ? (sInterp.soil_type_mr || "मध्यम काळी कसदार जमीन (Vertisol)")
-        : (s.soil_type || "Medium Black Soil (Vertisol)");
-    }
-    if (valSoilPh) valSoilPh.textContent = s.soil_ph != null ? s.soil_ph.toFixed(1) : "7.0";
-    if (subSoilPh) subSoilPh.textContent = isMr ? (sInterp.ph_status_mr || "योग्य") : (sInterp.ph_status || "Optimal Neutral");
 
-    if (valSoilMoisture) valSoilMoisture.textContent = s.soil_moisture_percent != null ? `${s.soil_moisture_percent.toFixed(1)}%` : "25.0%";
-    if (subSoilMoisture) subSoilMoisture.textContent = isMr ? (sInterp.moisture_status_mr || "वाफसा स्थिती") : (sInterp.moisture_status || "Field Capacity");
+    if (hasSoilData) {
+      const sInterp = s.interpretation || {};
 
-    if (valSoilNpk) {
-      const nVal = s.nitrogen_kg_ha != null ? Math.round(s.nitrogen_kg_ha) : 185;
-      const pVal = s.phosphorus_kg_ha != null ? Math.round(s.phosphorus_kg_ha) : 22;
-      const kVal = s.potassium_kg_ha != null ? Math.round(s.potassium_kg_ha) : 310;
-      valSoilNpk.textContent = `${nVal}-${pVal}-${kVal}`;
-    }
-    if (subSoilNpk) subSoilNpk.textContent = isMr ? "किलो/हेक्टर (आयसीएआर)" : "kg/ha (ICAR Rating)";
+      if (badgeSynthetic) {
+        badgeSynthetic.style.display = "inline-flex";
+        badgeSynthetic.textContent = isMr
+          ? (I18N.marathi.syntheticBadge || "🧪 प्रात्यक्षिक मृदा नोंद")
+          : (I18N.english.syntheticBadge || "🧪 Synthetic Demonstration");
+      }
 
-    if (valSoilCarbon) valSoilCarbon.textContent = s.organic_carbon_percent != null ? `${s.organic_carbon_percent.toFixed(2)}%` : "0.58%";
-    if (subSoilCarbon) subSoilCarbon.textContent = isMr ? (sInterp.organic_carbon_rating === "High" ? "उत्कृष्ट" : (sInterp.organic_carbon_rating === "Low" ? "कमी" : "मध्यम")) : (sInterp.organic_carbon_rating || "Medium");
+      if (soilTypeLabel) {
+        soilTypeLabel.textContent = isMr
+          ? (sInterp.soil_type_mr || s.soil_type || "स्थानिक मृदा नोंद")
+          : (s.soil_type || "Regional Soil Profile");
+      }
 
-    if (soilRiskText) {
-      soilRiskText.textContent = isMr
-        ? (sInterp.disease_soil_interaction_mr || "जमिनीतील गुणधर्म संतुलित असून पीक पोषणासाठी अनुकूल आहेत.")
-        : (sInterp.disease_soil_interaction || "Soil parameters within regional equilibrium with moderate disease vulnerability.");
+      if (valSoilPh) {
+        valSoilPh.textContent = s.soil_ph != null ? s.soil_ph.toFixed(1) : "--";
+      }
+      if (subSoilPh) {
+        subSoilPh.textContent = isMr ? (sInterp.ph_status_mr || "") : (sInterp.ph_status || "");
+      }
+
+      if (valSoilMoisture) {
+        valSoilMoisture.textContent = s.soil_moisture_percent != null ? `${s.soil_moisture_percent.toFixed(1)}%` : "--";
+      }
+      if (subSoilMoisture) {
+        subSoilMoisture.textContent = isMr ? (sInterp.moisture_status_mr || "") : (sInterp.moisture_status || "");
+      }
+
+      if (valSoilNpk) {
+        if (s.nitrogen_kg_ha != null && s.phosphorus_kg_ha != null && s.potassium_kg_ha != null) {
+          valSoilNpk.textContent = `${Math.round(s.nitrogen_kg_ha)}-${Math.round(s.phosphorus_kg_ha)}-${Math.round(s.potassium_kg_ha)}`;
+        } else {
+          valSoilNpk.textContent = "--";
+        }
+      }
+      if (subSoilNpk) {
+        subSoilNpk.textContent = isMr ? "किलो/हेक्टर (आयसीएआर)" : "kg/ha (ICAR Rating)";
+      }
+
+      if (valSoilCarbon) {
+        valSoilCarbon.textContent = s.organic_carbon_percent != null ? `${s.organic_carbon_percent.toFixed(2)}%` : "--";
+      }
+      if (subSoilCarbon) {
+        let carbonRating = "";
+        if (sInterp.organic_carbon_rating) {
+          if (isMr) {
+            carbonRating = sInterp.organic_carbon_rating === "High" ? "उत्कृष्ट" : (sInterp.organic_carbon_rating === "Low" ? "कमी" : "मध्यम");
+          } else {
+            carbonRating = sInterp.organic_carbon_rating;
+          }
+        } else if (s.organic_carbon_percent != null) {
+          carbonRating = s.organic_carbon_percent < 0.5 ? (isMr ? "कमी" : "Low") : (s.organic_carbon_percent > 0.75 ? (isMr ? "उत्कृष्ट" : "High") : (isMr ? "मध्यम" : "Medium"));
+        }
+        subSoilCarbon.textContent = carbonRating;
+      }
+
+      if (soilRiskText) {
+        soilRiskText.textContent = isMr
+          ? (sInterp.disease_soil_interaction_mr || s.disclaimer || "")
+          : (sInterp.disease_soil_interaction || s.disclaimer || "");
+      }
+    } else {
+      // Graceful display when soil data is missing or unavailable
+      if (badgeSynthetic) {
+        badgeSynthetic.style.display = "none";
+      }
+
+      if (soilTypeLabel) {
+        soilTypeLabel.textContent = isMr ? (I18N.marathi.soilUnavailable || "मृदा माहिती उपलब्ध नाही") : (I18N.english.soilUnavailable || "Soil data unavailable");
+      }
+
+      if (valSoilPh) valSoilPh.textContent = "--";
+      if (subSoilPh) subSoilPh.textContent = isMr ? "उपलब्ध नाही" : "Unavailable";
+
+      if (valSoilMoisture) valSoilMoisture.textContent = "--";
+      if (subSoilMoisture) subSoilMoisture.textContent = isMr ? "उपलब्ध नाही" : "Unavailable";
+
+      if (valSoilNpk) valSoilNpk.textContent = "--";
+      if (subSoilNpk) subSoilNpk.textContent = isMr ? "उपलब्ध नाही" : "Unavailable";
+
+      if (valSoilCarbon) valSoilCarbon.textContent = "--";
+      if (subSoilCarbon) subSoilCarbon.textContent = isMr ? "उपलब्ध नाही" : "Unavailable";
+
+      if (soilRiskText) {
+        soilRiskText.textContent = isMr
+          ? "या विश्लेषणासाठी मृदा आरोग्य माहिती उपलब्ध नाही. योग्य खत व सिंचन नियोजनासाठी स्थानिक माती परीक्षण प्रयोगशाळेचा सल्ला घ्या."
+          : "Soil data unavailable for this query. Consult an official soil testing laboratory for personalized nutrient recommendations.";
+      }
     }
   }
 
@@ -1612,7 +1689,21 @@ function renderResults(data, options = {}) {
 
   // Section 4: Soil Impact
   if (guidanceSoil) {
-    const soilInterpText = gBlock?.soil_interpretation || (isMr ? translateBlockToMarathi("soil", data) : (data.guidance?.soil_interpretation || "Soil parameters baseline recorded."));
+    let soilInterpText = "";
+    if (hasSoilData) {
+      const sInterp = s.interpretation || {};
+      soilInterpText = gBlock?.soil_interpretation ||
+        (isMr ? (sInterp.disease_soil_interaction_mr || translateBlockToMarathi("soil", data)) : (sInterp.disease_soil_interaction || data.guidance?.soil_interpretation || "Soil parameters recorded."));
+    } else {
+      const gSoil = gBlock?.soil_interpretation || data.guidance?.soil_interpretation;
+      if (gSoil && !gSoil.toLowerCase().includes("baseline recorded")) {
+        soilInterpText = gSoil;
+      } else {
+        soilInterpText = isMr
+          ? "मृदा माहिती उपलब्ध नाही. कृपया पिकाच्या पानांवरील लक्षणे आणि स्थानिक हवामानानुसार योग्य फवारणी व निगा राखावी."
+          : "Soil data unavailable. Please manage the crop based on foliar disease symptoms and prevailing weather precautions.";
+      }
+    }
     guidanceSoil.innerHTML = renderMarkdown(soilInterpText);
   }
 
