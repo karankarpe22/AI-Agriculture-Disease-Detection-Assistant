@@ -3,10 +3,9 @@
 torch>=2.2
 torchvision>=0.17
 Pillow>=10.0
-scikit-learn>=1.3
+numpy>=1.26.0
+scipy>=1.11.0
 PyYAML>=6.0
-matplotlib>=3.8
-seaborn>=0.13
 
 # RAG & Embeddings
 sentence-transformers>=3.0
@@ -23,9 +22,10 @@ python-dotenv>=1.0
 # Generative AI
 google-genai>=0.1.1
 
+# Workflow & Agent Orchestration
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
 # Voice & Accessibility
 gTTS>=2.5
 edge-tts>=7.0.0
-
-# Testing & Quality
-pytest>=8.0

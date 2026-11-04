@@ -1,9 +1,9 @@
 """Pretrained MobileNetV3-Large classifier construction and layer manipulation."""
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 import torch.nn as nn
-from torchvision.models import MobileNetV3, MobileNet_V3_Large_Weights, mobilenet_v3_large
+from torchvision.models import MobileNet_V3_Large_Weights, mobilenet_v3_large
 
 
 def build_mobilenetv3_large(num_classes: int, freeze_backbone: bool = True) -> Any:

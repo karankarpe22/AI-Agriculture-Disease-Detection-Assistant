@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # 1. Sensitive Credentials & API Secrets (NEVER COMMIT)
 # ==============================================================================
 .env
@@ -61,6 +61,6 @@ work/
 *.log
 *.pid
 
-# Audio Cache
-outputs/audio_cache/
-*.mp3
+# Audio Cache (ignore generated MP3 cache files, preserve directory)
+outputs/audio_cache/*.mp3
+!outputs/audio_cache/.gitkeep

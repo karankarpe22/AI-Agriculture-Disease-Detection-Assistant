@@ -1,9 +1,12 @@
 # 🏛️ AI Agriculture Assistant (कृषी सहाय्यक) — System Architecture Specification
 
 **Project Level:** Final Year / Mini Project Engineering Research  
-**Domain:** Multimodal Deep Learning, Retrieval-Augmented Generation (RAG), Generative AI & Agri-Tech  
+**Domain:** Multimodal Deep Learning, LangGraph State Orchestration, Retrieval-Augmented Generation (RAG), Generative AI & Agri-Tech  
 **Status:** Production-Ready & Deployed  
-**Document Version:** 2.0.0  
+**Document Version:** 3.0.0  
+**Live Production Deployments:**  
+- **Frontend (Vercel):** [https://krishi-sahayyak.vercel.app](https://krishi-sahayyak.vercel.app)  
+- **Backend (Render):** [https://krishi-sahayyak.onrender.com](https://krishi-sahayyak.onrender.com)  
 
 ---
 
@@ -15,15 +18,18 @@ The **AI Agriculture Assistant** is an academically grounded, high-performance d
 1. **Perception vs. Reasoning Decoupling:** Standalone computer vision models (CNNs) can classify leaf lesions but cannot reason about microclimate risks, explain pathological symptoms, or answer farmer questions.
 2. **LLM Hallucination Risk:** Generic Large Language Models (LLMs) hallucinate chemical fungicide dosages, confuse crop varieties, and give dangerous or non-compliant spray advice when prompted directly with images.
 3. **Environmental Invariance:** Laboratory ML models fail in real-world fields where high humidity accelerates fungal spore germination and rain triggers bacterial splash infection.
-4. **Linguistic Accessibility:** Rural Indian farmers require guidance in native regional languages (Marathi / English) delivered via voice rather than complex text.
+4. **Soil Interdependence:** Soil pH, volumetric moisture, and macronutrient balances directly govern crop vigor and susceptibility, yet traditional tools omit soil context.
+5. **Linguistic & Rural Accessibility:** Rural Indian farmers require guidance in native regional languages (Marathi / English) delivered via voice rather than complex text.
 
 ### Architectural Solution
-The system employs a **Decoupled Multimodal Pipeline**:
-* **Perception:** A fine-tuned **MobileNetV3-Large** convolutional neural network with **Grad-CAM** visual explainability.
-* **Domain Grounding:** A **FAISS Vector Store** indexed with verified **ICAR (Indian Council of Agricultural Research)** pathology publications.
-* **Microclimate Awareness:** Live meteorological telemetry from **Open-Meteo** / **OpenWeatherMap** APIs.
-* **Generative Reasoning:** **Google Gemini** with **Dynamic Multi-Model Cascading** enforcing strict JSON schema output.
-* **Voice Delivery:** **Microsoft Azure Neural TTS** with authentic Indian conversational voices and text normalization.
+The system employs an **Asynchronous LangGraph-Orchestrated Multimodal Pipeline**:
+* **Perception:** A fine-tuned **MobileNetV3-Large** convolutional neural network with **Grad-CAM** visual saliency explainability.
+* **Orchestration:** A stateful, asynchronous **LangGraph StateGraph** managing conditional routing, parallel context fan-out, and synchronization barriers.
+* **Domain Grounding:** A **FAISS Vector Store** indexed with verified **ICAR (Indian Council of Agricultural Research)** pathology publications and lexical keyword fallback.
+* **Microclimate Awareness:** Live meteorological telemetry from **OpenWeatherMap** with automatic zero-key fallback to **Open-Meteo**.
+* **Regional Soil Health:** An **Agro-Climatic Soil Health Service** with 100 validated synthetic records and a 5-tier hierarchical matching algorithm.
+* **Generative Reasoning:** **Google Gemini** via the official `google-genai` SDK with multi-model cascading and an offline RAG template fallback engine.
+* **Voice Delivery:** **Microsoft Azure Neural TTS** (via `edge-tts`) with authentic Indian conversational voices (`mr-IN-AarohiNeural` / `en-IN-NeerjaExpressiveNeural`) and `gTTS` fallback.
 
 ---
 
@@ -31,444 +37,246 @@ The system employs a **Decoupled Multimodal Pipeline**:
 
 ```mermaid
 flowchart TB
-    subgraph ClientLayer ["1. Client Presentation Layer (Web Browser)"]
-        UI["Modern Vanilla JS / CSS3 / HTML5 Frontend"]
+    subgraph ClientLayer ["1. Client Presentation Layer (Vercel)"]
+        UI["Modern Vanilla JS / Glassmorphism CSS3 / HTML5"]
         Camera["Leaf Photo / Sample Selector"]
-        Mic["Voice / Follow-Up Q&A Input"]
+        Mic["Voice / Speech-to-Text Input (Web Speech API)"]
         AudioPlayer["HTML5 Neural Audio Player"]
     end
 
-    subgraph APIGateway ["2. API Gateway & Orchestration (backend/main.py)"]
+    subgraph APIGateway ["2. API Gateway & Transport Layer (backend/main.py - Render)"]
         FastAPI["FastAPI High-Performance ASGI Engine"]
+        BoundedRead["Bounded Stream Reader (<=10MB, HTTP 413)"]
         Lifespan["Lifespan Startup Pre-Warming Engine"]
         GZip["GZip Compression Middleware (>1KB)"]
         Threadpool["Async Threadpool Offloading (run_in_threadpool)"]
     end
 
-    subgraph PerceptionLayer ["3. Perception & Computer Vision Subsystem"]
-        QualityGate["Heuristic Quality Gate (Laplacian Variance >= 35, Exposure)"]
-        Transforms["Tensor Normalization (224x224, ImageNet Z-Score)"]
-        CNN["MobileNetV3-Large (Fine-Tuned 13 Agricultural Classes)"]
-        GradCAM["Grad-CAM Saliency Engine (features[-1] Conv Hook)"]
+    subgraph LangGraphEngine ["3. LangGraph Orchestration Layer (src/graph/)"]
+        State["AgricultureAssistantState (TypedDict + Reducers)"]
+        QualityNode["quality_node (Laplacian Blur & Exposure Gate)"]
+        PredictionNode["prediction_node (MobileNetV3 Classification)"]
+        GradCAMNode["gradcam_node (features.16.0 Conv Hooks)"]
+        WeatherNode["weather_node (OpenWeatherMap / Open-Meteo)"]
+        SoilNode["soil_node (100-Record Synthetic Soil Matcher)"]
+        RAGNode["rag_node (FAISS Dense Search + Keyword Fallback)"]
+        AggregationNode["context_aggregation_node (Synchronized Join Barrier)"]
+        GuidanceNode["gemini_guidance_node (Single Gemini Call Budget)"]
     end
 
-    subgraph GroundingLayer ["4. Multi-Modal Context Grounding Subsystems"]
-        WeatherService["Open-Meteo Microclimate Engine (Temp, Humidity, Rain)"]
-        SoilAgent["Synthetic Soil Health Agent (Agro-Climatic Matcher)"]
-        SoilData["Synthetic Soil Dataset (JSON/CSV v1.0.0-synthetic-demo)"]
-        FAISS["FAISS IndexFlatL2 Dense Vector Store"]
-        MiniLM["paraphrase-multilingual-MiniLM-L12-v2 Embeddings"]
+    subgraph GroundingLayer ["4. Multi-Modal Context Knowledge Bases"]
+        SoilData["100-Record Synthetic Maharashtra Soil Dataset (JSON/CSV)"]
+        FAISS["FAISS IndexFlatIP Dense Vector Store (62 Chunks)"]
+        MiniLM["sentence-transformers all-MiniLM-L6-v2 Embeddings"]
         ICAR["Curated ICAR Pathology Knowledge Base (13 Markdown Guides)"]
     end
 
     subgraph ReasoningLayer ["5. Generative Agronomist Reasoning Layer"]
-        Cascade["Dynamic Multi-Model Cascade Engine"]
-        M1["gemini-flash-lite-latest (Primary)"]
-        M2["gemini-3.6-flash (Secondary)"]
-        M3["gemini-flash-latest (Tertiary)"]
-        M4["gemini-2.5-flash (Quaternary)"]
-        OfflineParser["Smart Offline Semantic Intent Regex Engine"]
+        GeminiClient["Google GenAI SDK (client = genai.Client)"]
+        Cascade["Candidate Model Fallback Chain: gemini-2.5-flash -> 2.0-flash -> 1.5-flash"]
+        OfflineParser["Deterministic Offline RAG Template Fallback Engine"]
     end
 
     subgraph AccessibilityLayer ["6. Accessibility & Neural Speech Subsystem"]
-        TextNorm["Agricultural Text Normalizer (°C, g/L, WP @ 2.5 g/L)"]
-        EdgeTTS["Edge-TTS Azure Neural Engine (Neerja & Aarohi)"]
+        EdgeTTS["Edge-TTS Microsoft Azure Neural Engine (Neerja & Aarohi)"]
+        gTTSFallback["gTTS Backup Engine"]
         DiskCache["Sub-2ms MD5 Audio Disk Cache (outputs/audio_cache/)"]
     end
 
     %% Interactions
-    Camera -->|Multipart Form-Data| FastAPI
-    Mic -->|JSON / AskRequest| FastAPI
-    FastAPI --> Lifespan
-    FastAPI --> Threadpool
-    Threadpool --> QualityGate
-    QualityGate -->|Valid Image| Transforms
-    Transforms --> CNN
-    CNN --> GradCAM
-    FastAPI --> WeatherService
-    FastAPI --> SoilAgent
-    SoilData --> SoilAgent
-    FastAPI --> FAISS
-    ICAR --> MiniLM --> FAISS
+    Camera -->|Multipart Form-Data| BoundedRead
+    Mic -->|User Speech Text| FastAPI
+    BoundedRead --> FastAPI
+    FastAPI -->|Initial State| QualityNode
+    QualityNode -->|Quality Pass| PredictionNode
+    QualityNode -->|Quality Fail| AggregationNode
 
-    CNN -->|1. Disease Perception & Confidence| Cascade
-    GradCAM -->|Heatmap Base64| FastAPI
-    WeatherService -->|2. Microclimate Weather Context| Cascade
-    SoilAgent -->|3. Synthetic Soil Health Context| Cascade
-    FAISS -->|Top-3 Grounded ICAR Chunks| Cascade
+    PredictionNode --> WeatherNode
+    PredictionNode --> SoilNode
+    PredictionNode --> RAGNode
+    PredictionNode -.->|If Enabled| GradCAMNode
 
-    Cascade --> M1
-    M1 -.->|429 / 503 Quota Fallback| M2
-    M2 -.->|Fallback| M3
-    M3 -.->|Fallback| M4
-    M4 -.->|Network Outage| OfflineParser
+    WeatherNode --> AggregationNode
+    SoilNode --> AggregationNode
+    RAGNode --> AggregationNode
+    GradCAMNode -.-> AggregationNode
 
-    Cascade -->|Structured JSON Advisory| FastAPI
-    FastAPI --> TextNorm --> EdgeTTS --> DiskCache
-    DiskCache -->|Audio Bytes MP3| AudioPlayer
-    FastAPI -->|Compressed JSON Response| UI
+    AggregationNode --> GuidanceNode
+    GuidanceNode --> GeminiClient
+    GeminiClient --> Cascade
+    Cascade -->|Quota Exhaustion| OfflineParser
+
+    GuidanceNode --> FastAPI
+    FastAPI --> EdgeTTS
+    EdgeTTS --> DiskCache
+    DiskCache --> AudioPlayer
 ```
 
 ---
 
-## 3. Subsystem Architectural Breakdown
+## 3. LangGraph Orchestration & State Architecture
 
-### Subsystem 1: Defensive Input Quality Gate (`src/preprocessing/quality_check.py`)
-Foliar diseases exhibit microscopic visual cues (chlorotic halos, concentric rings, necrotic borders). Degraded inputs must be intercepted before consuming neural inference resources.
+### 3.1 State Schema (`AgricultureAssistantState`)
+State is declared as a Python `TypedDict` in `src/graph/state.py` with explicit `operator.add` reducers to guarantee thread-safe parallel branch execution:
 
+```python
+class AgricultureAssistantState(TypedDict, total=False):
+    # Request inputs
+    request_type: str                  # "analyze" or "ask"
+    user_question: str
+    language: str                      # "english" or "marathi"
+    location: str
+    image_input: bytes | str | None
+    include_gradcam: bool
+
+    # Quality Gate
+    image_is_valid: bool
+    quality_reasons: list[str]
+    quality_metrics: dict[str, Any]
+
+    # Vision & Perception
+    predicted_crop: str | None
+    predicted_disease: str | None
+    prediction_confidence: float
+    is_low_confidence: bool
+    top_predictions: list[dict[str, Any]]
+    gradcam_base64: str | None
+
+    # Context Branch Outputs
+    weather_data: dict[str, Any]
+    soil_data: dict[str, Any]
+    retrieved_evidence: list[dict[str, Any]]
+    evidence_sources: list[str]
+
+    # Generative Guidance
+    final_guidance: dict[str, Any]
+
+    # Reducer-protected execution tracking
+    completed_stages: Annotated[list[str], operator.add]
+    error_information: Annotated[list[str], operator.add]
 ```
-Raw Upload ──► [Resolution Check] ──► [Photometric Exposure] ──► [Laplacian Variance] ──► Valid Tensor
-                    (<100x100 px)          (μ < 30 or μ > 230)            (Var < 35.0)
-```
 
-1. **Resolution Threshold:** Enforces minimum dimension $W \ge 100	ext{ px}, H \ge 100	ext{ px}$. Low-resolution inputs lack Nyquist-frequency detail for disease morphology.
-2. **Photometric Exposure Filter:**
-   * Grayscale mean pixel intensity: $\mu_{	ext{gray}} = rac{1}{N} \sum_{i=1}^{N} I_i$.
-   * **Underexposure Gate ($\mu < 30.0$):** Eliminates night or shadowed photos where color channels clip to black.
-   * **Overexposure Gate ($\mu > 230.0$):** Eliminates flash glare and sunlight washouts where chlorosis cannot be differentiated from reflection.
-3. **Sharpness & Blur Estimation (Laplacian Variance):**
-   * Computes the 2D discrete convolution of grayscale leaf image $I$ with the Laplacian operator $K$:
-     $$K = egin{bmatrix} 0 & 1 & 0 \ 1 & -4 & 1 \ 0 & 1 & 0 \end{bmatrix}, \quad 
-abla^2 I = I * K$$
-   * Calculates sharpness as the statistical variance of the Laplacian response:
-     $$	ext{Blur Score} = 	ext{Var}(
-abla^2 I) = rac{1}{N} \sum ((
-abla^2 I) - \mu_{
-abla^2 I})^2$$
-   * **Rejection Boundary:** $	ext{Blur Score} < 35.0$ flags motion or focal blur, prompting the farmer to steady the camera.
+### 3.2 Key Graph Design Principles
+1. **Parallel Context Fan-Out:** `weather_node`, `soil_node`, `rag_node`, and optional `gradcam_node` execute concurrently via asyncio tasks.
+2. **Deterministic Join Barrier:** `context_aggregation_node` collects results from all context branches, evaluates fallbacks for any failed branch, and produces an aggregated payload for Gemini.
+3. **Single LLM Call Budget:** Gemini is called exactly once per successful request in `gemini_guidance_node`, eliminating runaway API billing and latency.
+4. **Early Termination on Quality Failure:** If leaf quality checks fail, the workflow bypasses perception, context retrieval, and LLM calls, returning quality remediation advice in $< 15\text{ ms}$.
 
 ---
 
-### Subsystem 2: Deep Learning Perception & Saliency (`src/prediction/predict.py`)
+## 4. Subsystems Deep-Dive
 
-#### 1. Model Architecture Selection
-* **Model:** `MobileNetV3-Large` (ImageNet-1K Pretrained).
-* **Rationale over ResNet-50 / VGG-16:**
-  * Uses **Inverted Residuals** with linear bottlenecks and **Depthwise Separable Convolutions**, reducing parameter count to **~4.2M** (83% smaller than ResNet-50's ~25M).
-  * Incorporates **Squeeze-and-Excitation (SE)** attention modules in the residual blocks to reweight channel dependencies, selectively amplifying disease lesion channels.
-  * Employs the hardware-efficient **Hard-Swish (h-swish)** non-linearity:
-    $$	ext{h-swish}(x) = x \cdot rac{	ext{ReLU6}(x + 3)}{6}$$
+### Subsystem 1: Computer Vision & Saliency (`src/prediction/predict.py`)
+- **Model Architecture:** MobileNetV3-Large (`models/mobilenetv3_best.pth`, 17.08 MB) fine-tuned on 13 Solanaceae classes across Bell Pepper, Potato, and Tomato.
+- **Top-3 Probability Calibration:** Computes Softmax class probabilities and highlights alternative potential diagnoses if confidence is below 60%.
+- **Grad-CAM Hooks:** Intercepts activations and gradients at `features.16.0` (final point-wise convolution) using defensive forward/backward hooks removed in a `finally` block to prevent GPU/CPU memory leaks.
 
-#### 2. Class Taxonomy (13 Agricultural Classes)
-1. `Pepper__bell___Bacterial_spot`
-2. `Pepper__bell___healthy`
-3. `Potato___Early_blight`
-4. `Potato___Late_blight`
-5. `Tomato_Bacterial_spot`
-6. `Tomato_Early_blight`
-7. `Tomato_Late_blight`
-8. `Tomato_Leaf_Mold`
-9. `Tomato_Septoria_leaf_spot`
-10. `Tomato_Spider_mites_Two_spotted_spider_mite`
-11. `Tomato__Target_Spot`
-12. `Tomato__Tomato_YellowLeaf__Curl_Virus`
-13. `Tomato_healthy`
+### Subsystem 2: Soil Health Service (`src/soil/soil_service.py`)
+- **Validated Dataset:** 100 verified synthetic records (`data/soil/synthetic_soil_records.json` and `.csv`) covering Maharashtra districts.
+- **5-Tier Fallback Matching Hierarchy:**
+  1. *Tier 1:* Exact District + Exact Crop (`match_method="exact"`).
+  2. *Tier 2:* District + Similar Crop family (`match_method="district_crop_family"`).
+  3. *Tier 3:* District-level average across all crops (`match_method="district_average"`).
+  4. *Tier 4:* State-level agro-climatic zone average (`match_method="state_crop_average"`).
+  5. *Tier 5:* Deterministic Maharashtra benchmark (`match_method="default_benchmark"`).
+- **Mandatory Disclosures:** Every response explicitly carries `data_type="synthetic"`.
 
-#### 3. Two-Stage Transfer Learning Protocol
+### Subsystem 3: RAG Knowledge Base (`src/rag/vector_store.py`)
+- **Knowledge Documents:** 13 markdown files in `knowledge_base/` covering ICAR and TNAU management guides for all 13 supported classes.
+- **Dense Vector Search:** 62 extracted chunks indexed in FAISS (`models/rag_index.faiss`) using `all-MiniLM-L6-v2` dense embeddings.
+- **Keyword Fallback:** Automatic lexical token-overlap retrieval if FAISS or sentence-transformers is uninitialized.
 
-```
-Stage 1: Head Training (Phase 2)
-[ Frozen Backbone: features (requires_grad = False) ] ──► [ Trained Head: Linear(1024, 13) ]
-  • AdamW (LR = 10^-3)  • 3 Epochs  • Validation Acc: 74.77%  • Loss: 0.8105
+### Subsystem 4: Live Weather Service (`src/weather/weather_service.py`)
+- **Dual Providers:** OpenWeatherMap primary with automatic zero-key fallback to Open-Meteo.
+- **Microclimate Risk Heuristics:** Computes epidemiological risk scores for Late Blight, Early Blight, Bacterial Spot, and Spider Mites.
 
-Stage 2: Fine-Tuning Upper Layers (Phase 3)
-[ Frozen Lower Blocks ] ──► [ Unfrozen Top 3 Bottleneck Blocks ] ──► [ Classification Head ]
-  • AdamW (LR = 10^-4 -> 10^-6 Cosine Annealed)  • Validation Acc: 83.54%  • Loss: 0.5702
-```
+### Subsystem 5: Gemini Generative Advisory (`src/gemini/guidance_service.py`)
+- **Official SDK:** Google GenAI Python SDK (`from google import genai`).
+- **Candidate Model Chain:** `gemini-2.5-flash` $\rightarrow$ `gemini-2.0-flash` $\rightarrow$ `gemini-1.5-flash`.
+- **Offline RAG Engine:** 200+ line deterministic template synthesis engine compiling structured bilingual guidance directly from retrieved RAG evidence if the API quota is exhausted.
 
-* **Phase 2 (Head Training):** The backbone is completely frozen (`requires_grad = False`). The randomly initialized linear head (`nn.Linear(1024, 13)`) is trained with AdamW ($LR = 10^{-3}$) for 3 epochs. This aligns output weights without destroying pretrained feature detectors.
-* **Phase 3 (Fine-Tuning):** The top 3 Inverted Residual blocks are unfrozen. Training proceeds for 2 epochs using a gentle learning rate ($LR = 10^{-4}$ with `CosineAnnealingLR` decaying to $10^{-6}$).
-* **Empirical Validation:**
-  * Validation accuracy increased from **74.77% $
-ightarrow$ 83.54%** (+8.77% gain).
-  * Validation loss dropped from **0.8105 $
-ightarrow$ 0.5702** (29.6% error reduction).
-  * Training loss dropped from **0.3312 $
-ightarrow$ 0.0628** (5.3x lower error).
-  * Test set precision reached **86.99%** with an average CPU inference latency of **21.5 ms**.
-
-#### 4. Visual Saliency via Grad-CAM
-To guarantee model interpretability and farmer trust, Gradient-weighted Class Activation Mapping (Grad-CAM) hooks into the final convolutional feature layer (`model.features[-1]`):
-1. Compute the gradient of the winning class logit $y^c$ with respect to feature activation maps $A^k$:
-   $$lpha_k^c = rac{1}{Z} \sum_{i=1}^{U} \sum_{j=1}^{V} rac{\partial y^c}{\partial A_{ij}^k}$$
-2. Weight activations and apply ReLU to isolate features positively contributing to the diagnosis:
-   $$L_{	ext{Grad-CAM}}^c = 	ext{ReLU}\left(\sum_{k} lpha_k^c A^k
-ight)$$
-3. The normalized heatmap is upsampled to $224 	imes 224$ and superimposed as a jet-colormap over the leaf image, visually verifying that the CNN looked at the actual fungal lesions rather than background soil.
+### Subsystem 6: Neural Voice Synthesis (`src/utils/voice_service.py`)
+- **Dual Engine:** Microsoft Azure Neural TTS via `edge-tts` (`mr-IN-AarohiNeural` / `en-IN-NeerjaExpressiveNeural`) with `gTTS` fallback.
+- **Disk Caching:** Sub-2ms MD5-hashed audio caching in `outputs/audio_cache/`.
 
 ---
 
-### Subsystem 3: RAG Knowledge Retrieval Layer (`src/rag/vector_store.py`)
+## 5. End-to-End Execution Sequence
 
-```
-ICAR Research Guides (.md)
-           │
-           ▼
-[ Semantic Chunker ] ──► 48 KB Chunks (rag_chunks.json)
-           │
-           ▼
-[ Embedding Engine ] ──► paraphrase-multilingual-MiniLM-L12-v2 (384-dim)
-           │
-           ▼
-[ FAISS Vector Index ] ──► IndexFlatL2 (rag_index.faiss)
-           │
-           ▼
-[ Dual-Filter Search ] ──► Metadata Filter (Crop/Disease) + Cosine Nearest Neighbors
-           │
-           ▼
-Top-3 Authoritative Research Chunks
-```
-
-1. **Corpus:** 13 specialized agricultural pathology documents curated from Indian Council of Agricultural Research (ICAR) field manuals and agricultural university extension bulletins.
-2. **Dense Vector Embeddings:** Generated using `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions), supporting cross-lingual semantic matching for Marathi and English agricultural terms.
-3. **Indexing:** Fast, sub-millisecond retrieval powered by **Facebook AI Similarity Search (FAISS)** using `IndexFlatL2`.
-4. **Hybrid Retrieval:** Queries are first filtered by diagnosed crop and disease metadata, followed by cosine vector search on the farmer's specific query. The top-3 chunks containing precise chemical compounds (e.g. *Mancozeb 75% WP @ 2.0–2.5 g/L*), biological controls (e.g. *5% Neem Seed Kernel Extract*), and Pre-Harvest Intervals (PHI) are injected into the LLM context.
-
----
-
-### Subsystem 4: Microclimate Risk Engine (`src/weather/weather_service.py`)
-Crop diseases are biological events driven by microclimate conditions:
-* **Data Sources:** Live, zero-config meteorological data via **Open-Meteo API** (hourly temperature, relative humidity, precipitation probability, weather code) with automatic fallback to **OpenWeatherMap**.
-* **Epidemiological Risk Modeling:**
-  * **Fungal Blast & Blight Risk:** Triggered when ambient relative humidity $> 75\%$ and temperature is between $20^\circ	ext{C}	ext{--}28^\circ	ext{C}$ (ideal conditions for *Alternaria* and *Phytophthora* sporulation).
-  * **Bacterial Spot Risk:** Triggered during rain events and high humidity ($> 80\%$), where water droplets splash bacterial exudate across the canopy.
-  * **Insect Vector Risk:** Warm, dry conditions ($> 30^\circ	ext{C}$, humidity $< 50\%$) trigger whitefly and spider mite vector warnings for viral diseases (TYLCV).
-* **Caching:** In-memory 10-minute coordinate cache eliminates redundant HTTP calls.
-
----
-
-### Subsystem 5: Synthetic Soil Health Agent (`src/soil/soil_service.py`)
-Soil chemistry and moisture dynamics fundamentally govern crop vigor, root defense, and fungicide absorption:
-* **The Problem:** Smallholder farmers rarely possess recent laboratory soil test core analyses (taking 7–14 days and costing Rs. 500–1000). Requiring manual entry of N-P-K or pH creates severe user friction and drop-off.
-* **The Solution:** A modular, deterministic **Soil Health Agent** backed by a structured regional synthetic dataset (`data/soil/synthetic_soil_records.json` and `.csv`).
-* **Dataset Schema (`version 1.0.0-synthetic-demo`):**
-  * `record_id`: Unique identifier (e.g., `SOIL-MH-PUN-001`).
-  * `location` / `district` / `agro_climatic_zone`: Regional mapping (e.g., Pune / Western Maharashtra Scarcity Zone).
-  * `crop_type`: Target crop (`Potato`, `Tomato`, `General`).
-  * `soil_type`: Dominant physical soil class (e.g., Medium Deep Black Soil, Loamy Clay, Lateritic).
-  * `soil_ph`: Soil reaction index ($5.5 - 8.5$).
-  * `soil_moisture_percent`: Volumetric root-zone moisture ($10.0\% - 85.0\%$).
-  * `nitrogen_kg_ha`, `phosphorus_kg_ha`, `potassium_kg_ha`: Available primary macronutrients ($kg/ha$).
-  * `organic_carbon_percent`: Soil biological activity and humus index ($0.2\% - 1.8\%$).
-  * `electrical_conductivity_ds_m`: Salinity metric ($dS/m$).
-  * `drainage_class`: Infiltration status (`Well-drained`, `Moderate`, `Impeded`).
-  * `data_type`: Explicitly constant `"synthetic"`.
-  * `disclaimer`: Prominent notification: *"Demonstration synthetic baseline record. Not a physical laboratory measurement."*
-* **Hierarchical Matching Strategy:**
-  1. **Exact match:** `(location, crop)` pair.
-  2. **Location general:** `(location, 'General')`.
-  3. **Location default:** First entry matching the queried city.
-  4. **Sub-basin alias match:** Resolves agricultural sub-regions (e.g., *Akurdi* -> *Pune*, *Baramati* -> *Pune*).
-  5. **Regional baseline fallback:** Returns verified Maharashtra agro-climatic benchmark with explicit `is_fallback=True` metadata.
-* **Derived Agronomic Interpretation:**
-  * Categorizes pH status (Optimal / Acidic / Alkaline).
-  * Categorizes moisture regime (Adequate / Waterlogged / Deficit).
-  * Evaluates qualitative N-P-K nutrient status against ICAR standards.
-  * Formulates localized disease-soil interaction notes in English and Marathi.
-
----
-
-### Subsystem 6: Generative Agronomist Advisory Layer (`src/gemini/guidance_service.py`)
-
-```
-┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
-│   1. Disease Context    │  │   2. Weather Context    │  │   3. Soil Health Context│
-│  • MobileNetV3 Class    │  │  • Open-Meteo Temp/Hum  │  │  • Validated N-P-K & pH │
-│  • Perception Confidence│  │  • Precipitation Risk   │  │  • Moisture & Soil Type │
-│  • Top-3 ICAR Evidence  │  │  • Vector Warnings      │  │  • Synthetic Disclaimer │
-└────────────┬────────────┘  └────────────┬────────────┘  └────────────┬────────────┘
-             │                            │                            │
-             └──────────────────────┬─────┴────────────────────────────┘
-                                    │ (Tripartite Context Assembly)
-                                    ▼
-                 [ Dynamic Multi-Model Cascading Engine ]
-              [ Dynamic Multi-Model Cascading Engine ]
-      ┌─────────────────────────────────────────────────────┐
-      │ Primary:   gemini-flash-lite-latest (Fastest, High Quota) │
-      │ Fallback 1: gemini-3.6-flash       (High Intelligence)   │
-      │ Fallback 2: gemini-flash-latest    (Broad Compatibility) │
-      │ Fallback 3: gemini-2.5-flash       (Standard Baseline)   │
-      └──────────────────────────┬──────────────────────────┘
-                                 │ HTTP 429 Quota Exhaustion / 503 Outage
-                                 ▼
-              [ Smart Offline Semantic Intent Parser ]
-            (Full Regex Keyword Classification in EN & MR)
-                                 │
-                                 ▼
-                 Guaranteed Structured JSON Advisory
-```
-
-#### 1. Multi-Model Dynamic Cascading Architecture
-To prevent the strict **20 requests/day free-tier quota exhaustion** (`429 RESOURCE_EXHAUSTED`) from freezing the app, the engine cascades dynamically across available Gemini models:
-* If the primary model returns 429 or 503, the engine intercepts the exception and immediately retries the next model in the cascade in $< 200	ext{ ms}$.
-
-#### 2. Strict JSON Schema Validation
-The generative prompt enforces strict structural boundaries to prevent unstructured prose:
-```json
-{
-  "direct_answer": "Precise, direct answer addressing the farmer's exact query.",
-  "explanation": "Pathological background of the causal organism and foliar impact.",
-  "weather_interpretation": "Evaluation of how prevailing local humidity/temperature influences spread.",
-  "soil_interpretation": "Interdependent analysis of soil pH, root-zone moisture, and nutrient status on crop vigor and fungal susceptibility.",
-  "synthetic_soil_disclosure": "Explicit disclosure noting soil values represent synthetic baseline demonstration data.", 
-  "management_guidance": "Exact ICAR chemical sprays with formulation and dosage per liter.",
-  "prevention": "Cultural practices, crop rotation, sanitation, and drip irrigation guidance.",
-  "precautions": "Mandatory PPE handling, waiting periods, and pre-harvest intervals.",
-  "expert_advisory": "Contact protocols for local Krishi Vigyan Kendra (KVK).",
-  "language": "english | marathi",
-  "powered_by": "Gemini Multi-Model Cascade + ICAR Grounded RAG"
-}
-```
-
-#### 3. Smart Offline Semantic Intent Engine
-If internet access is completely absent in the field, the system activates an offline regex intent parser that directly answers specific farmer doubts using retrieved ICAR knowledge:
-* `is_where`: Explains anatomical plant locations (lower older leaves, stems, tubers).
-* `is_what`: Defines the fungal/bacterial condition and foliar damage.
-* `is_why`: Details environmental sporulation triggers and overwintering spores.
-* `is_symptom`: Describes target-board concentric rings and chlorotic halos.
-* `is_when`: Explains seasonal timings (flowering, bulking, morning dew).
-* `is_neem` / `is_spray` / `is_harvest`: Gives exact organic formulations and pre-harvest intervals.
-* **Full bilingual parity:** Native responses generated in English and Marathi.
-
----
-
-### Subsystem 7: Human-Like Neural Speech Subsystem (`src/utils/voice_service.py`)
-* **Engine:** Microsoft Azure Neural Speech via `edge-tts`.
-  * **English (India):** `en-IN-NeerjaExpressiveNeural` (natural conversational cadence with human breathing pauses and friendly Indian English inflection).
-  * **Marathi (India):** `mr-IN-AarohiNeural` (authentic native Marathi articulation).
-* **Agricultural Text Normalization (`_clean_for_speech`):**
-  * Strips Markdown formatting (`*`, `#`, `•`).
-  * Expands abbreviations into spoken language:
-    * `°C` $
-ightarrow$ *"degrees Celsius"* / *"अंश सेल्सिअस"*
-    * `g/L` $
-ightarrow$ *"grams per liter"* / *"ग्रॅम प्रति लिटर"*
-    * `ml/L` $
-ightarrow$ *"milliliters per liter"* / *"मिली प्रति लिटर"*
-    * `WP @ 2.5` $
-ightarrow$ *"wettable powder at 2.5"* / *"डब्ल्यूपी अडीच प्रमाणे"*
-    * `ICAR` $
-ightarrow$ *"I.C.A.R."* / *"आयसीएआर"*
-* **Sub-2ms Disk Cache:** Input speech text is hashed via MD5 and cached as MP3 in `outputs/audio_cache/`. Repeated playback loads in **$< 2	ext{ ms}$** with zero bandwidth consumption.
-
----
-
-### Subsystem 8: API Gateway & Performance Optimizations (`backend/main.py`)
-* **Framework:** **FastAPI** on **Uvicorn** ASGI server.
-* **Lifespan Startup Warm-Up:** Pre-warms `DiseasePredictor`, `RAGService`, and `WeatherService` at boot time using `@asynccontextmanager lifespan(app: FastAPI)`, eliminating the 5–7 second cold-start delay on first use.
-* **Asynchronous Threadpool Offloading:** Uses `starlette.concurrency.run_in_threadpool` for CPU-bound PyTorch inference, Grad-CAM rendering, and FAISS vector retrieval, preventing blocking of the async event loop.
-* **GZip Compression:** `GZipMiddleware(app, minimum_size=1000)` compresses JSON advisories and Grad-CAM base64 strings.
-* **Static Asset Caching:** Serves CSS/JS with `Cache-Control: public, max-age=3600` headers.
-
----
-
-## 4. End-to-End Execution Workflows
-
-### Workflow A: Leaf Image Diagnosis (`POST /analyze`)
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Farmer as Farmer / User
-    participant Gateway as FastAPI (backend/main.py)
-    participant QGate as Quality Gate (quality_check.py)
-    participant CNN as MobileNetV3 + Grad-CAM (predict.py)
-    participant Weather as Weather Service (weather_service.py)
-    participant RAG as FAISS Vector Store (vector_store.py)
-    participant Gemini as Gemini Multi-Model Cascade (guidance_service.py)
+    actor Farmer as Farmer / Web Browser (Vercel)
+    participant Gateway as FastAPI (backend/main.py - Render)
+    participant Graph as LangGraph Workflow (src/graph/)
+    participant Vision as MobileNetV3 (predict.py)
+    participant Context as Weather / Soil / RAG (Parallel)
+    participant Gemini as Google Gemini (guidance_service.py)
+    participant TTS as Edge-TTS (voice_service.py)
 
-    Farmer->>Gateway: POST /analyze (Image File, City, Language, Question)
-    Gateway->>QGate: validate_image_file() & assess_image()
-    alt Image Low Quality (Blurry / Dark / Glare)
-        QGate-->>Gateway: is_valid = False + Guidance Message
-        Gateway-->>Farmer: Return 200 OK (Quality Rejection Warning)
-    else Image Quality Valid
-        QGate-->>Gateway: is_valid = True
-        Gateway->>CNN: run_in_threadpool(predictor.predict)
-        CNN-->>Gateway: Disease Class, Confidence (98.4%), Grad-CAM Heatmap
-        
-        participant Soil as Soil Health Agent (soil_service.py)
+    Farmer->>Gateway: POST /analyze (Image File <= 10MB, City, Language, Question)
+    Gateway->>Gateway: Bounded read(10MB + 1) -> HTTP 413 check
+    Gateway->>Graph: workflow.ainvoke(initial_state)
 
-        par Parallel Tripartite Context Gathering
-            Gateway->>Weather: get_weather(location)
-            Weather-->>Gateway: Temp, Humidity, Disease Risk Index
+    alt Quality Check Fails
+        Graph->>Graph: quality_node -> is_valid = False
+        Graph-->>Gateway: Short-circuit to END with Quality Guidance
+    else Quality Check Passes
+        Graph->>Vision: prediction_node -> Top-3 & Confidence
+        par Concurrent Context Retrieval
+            Graph->>Context: weather_node (Live Weather & Risk)
         and
-            Gateway->>Soil: get_soil_data(location, crop)
-            Soil-->>Gateway: Synthetic Soil Chemistry, pH, NPK, Disclaimer
+            Graph->>Context: soil_node (100-Record 5-Tier Soil Match)
         and
-            Gateway->>RAG: retrieve(crop, disease, question, top_k=3)
-            RAG-->>Gateway: Top-3 ICAR Research Chunks
+            Graph->>Context: rag_node (FAISS Dense & Keyword Search)
+        and
+            Graph->>Vision: gradcam_node (features.16.0 Heatmap)
         end
-        
-        Gateway->>Gemini: generate_guidance(crop, disease, weather, soil, evidence, question)
-        Gemini-->>Gateway: Structured Advisory JSON (Direct Answer, Sprays, Safety)
-        Gateway-->>Farmer: Comprehensive JSON Response (Diagnosis + Heatmap + Guidance)
+        Context-->>Graph: Join at context_aggregation_node
+        Graph->>Gemini: gemini_guidance_node (Tripartite Synthesis)
+        Gemini-->>Graph: Structured Advisory (EN / MR)
+        Graph-->>Gateway: Final State
+    end
+
+    Gateway-->>Farmer: JSON Response (Diagnosis, Soil, Weather, Guidance)
+    opt User clicks Play Audio
+        Farmer->>Gateway: POST /tts (Text, Language)
+        Gateway->>TTS: text_to_speech_file()
+        TTS-->>Gateway: Stream Cached MP3
+        Gateway-->>Farmer: Audio Stream
     end
 ```
-
-### Workflow B: Standalone / Follow-Up Agronomist Q&A (`POST /ask`)
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Farmer as Farmer / User
-    participant Gateway as FastAPI (backend/main.py)
-    participant Weather as Weather Service (weather_service.py)
-    participant RAG as FAISS Vector Store (vector_store.py)
-    participant Gemini as Gemini Multi-Model Cascade (guidance_service.py)
-
-    Farmer->>Gateway: POST /ask (Question, Optional Crop/Disease, City)
-    Gateway->>Weather: get_weather(city)
-    Weather-->>Gateway: Microclimate Conditions
-    Gateway->>RAG: retrieve(crop, disease, question, top_k=3)
-    RAG-->>Gateway: ICAR Domain Evidence
-    Gateway->>Gemini: generate_guidance(question, weather, evidence)
-    alt Gemini Active
-        Gemini-->>Gateway: Generative Bilingual Direct Answer
-    else Gemini Quota / Network Error
-        Gemini->>Gemini: Fallback to Offline Semantic Intent Matcher
-        Gemini-->>Gateway: Grounded ICAR Rule-Matched Direct Answer
-    end
-    Gateway-->>Farmer: Return JSON (direct_answer, weather, sources)
-```
-
----
-
-## 5. Component Responsibility & Mapping Matrix
-
-| Tier | Directory / File | Core Responsibility | Technologies Used |
-| :--- | :--- | :--- | :--- |
-| **API Gateway** | `backend/main.py` | Routing, Lifespan warm-up, threadpool offloading, GZip compression | FastAPI, Starlette, Pydantic, Uvicorn |
-| **Vision Inference** | `src/prediction/predict.py` | MobileNetV3 classification, Softmax confidence, Grad-CAM generation | PyTorch, torchvision, PIL, NumPy |
-| **Quality Filter** | `src/preprocessing/quality_check.py` | Heuristic gate for blur (Laplacian variance), exposure, resolution | OpenCV, SciPy (`convolve2d`), NumPy |
-| **Transforms** | `src/preprocessing/transforms.py` | Normalization ($224 	imes 224$, ImageNet $\mu,\sigma$), training data augmentation | torchvision transforms |
-| **RAG Retrieval** | `src/rag/vector_store.py` | Dense vector indexing, semantic search, ICAR chunk retrieval | FAISS, sentence-transformers, MiniLM |
-| **Knowledge Base** | `knowledge_base/*.md` | Curated pathology guidelines, chemical dosages, cultural controls | Markdown, ICAR Publications |
-| **Microclimate** | `src/weather/weather_service.py` | Live meteorological telemetry ingestion, fungal/bacterial risk modeling | Open-Meteo REST API, OpenWeatherMap |
-| **Generative LLM** | `src/gemini/guidance_service.py` | Multi-model cascading (`flash-lite` $
-ightarrow$ `3.6-flash`), offline intent matcher | Google Gemini API, Regex, Python |
-| **Neural Speech** | `src/utils/voice_service.py` | Spoken text normalization, Azure Neural speech synthesis, MD5 disk cache | `edge-tts`, asyncio, hashlib |
-| **Client Interface**| `frontend/index.html`, `app.js`, `styles.css` | Tabbed dual-mode interface, audio playback, mic voice input | HTML5, Vanilla JavaScript, CSS3 |
 
 ---
 
 ## 6. Verification & Performance Benchmarks
 
-All architectural components have been validated with automated test suites (`tests/`):
+The entire system is continuously verified against a comprehensive 144-test regression suite:
 
-| Test Suite | Components Verified | Test Count | Status | Latency |
-| :--- | :--- | :---: | :---: | :---: |
-| `test_quality_check.py` | Blur, dark, bright, low-res rejection logic | 5 Tests | **PASS** | $< 10	ext{ ms}$ |
-| `test_prediction.py` | MobileNetV3 load, forward pass, Grad-CAM heatmap | 3 Tests | **PASS** | $21.5	ext{ ms}$ |
-| `test_rag.py` | FAISS index loading, semantic query retrieval | 2 Tests | **PASS** | $< 5	ext{ ms}$ |
-| `test_weather.py` | Live Open-Meteo telemetry, risk calculation | 2 Tests | **PASS** | $< 150	ext{ ms}$ |
-| `test_gemini.py` | Multi-model cascade, Marathi guidance generation | 2 Tests | **PASS** | Variable |
-| `test_api.py` | Health probe, `/predict`, `/ask`, `/analyze`, `/tts` | 7 Tests | **PASS** | **18.77 s total** |
-| `test_integration.py` | Complete end-to-end diagnosis pipeline (EN & MR) | 2 Tests | **PASS** | Full Pipeline |
+| Test Suite File | Subsystem Verified | Tests | Status |
+| :--- | :--- | :---: | :---: |
+| `tests/test_api.py` | FastAPI endpoints (`/analyze`, `/ask`, `/weather`, `/soil`, `/tts`, etc.) | 22 | **PASS** |
+| `tests/test_graph_workflow.py` | LangGraph StateGraph routing, parallel sync, ask parity, quality stop | 21 | **PASS** |
+| `tests/test_graph_nodes.py` | Asynchronous node adapters and list reducer safety | 23 | **PASS** |
+| `tests/test_graph_state.py` | `AgricultureAssistantState`, initialization, and API response adapters | 8 | **PASS** |
+| `tests/test_soil.py` | 5-tier fallback matching, synthetic disclosures, sub-basin aliases | 19 | **PASS** |
+| `tests/test_soil_dataset_100.py` | 100-record dataset schema, scalar sync, N-P-K ranges | 8 | **PASS** |
+| `tests/test_rag.py` | FAISS index search, 62 chunks, metadata preservation, keyword fallback | 14 | **PASS** |
+| `tests/test_reliability.py` | 10MB bounded reading, corrupt image safety, rate-limit fallback | 12 | **PASS** |
+| `tests/test_quality_check.py` | Laplacian blur, brightness bounds, aspect ratio, resolution | 5 | **PASS** |
+| `tests/test_prediction.py` | MobileNetV3 inference, Top-3 predictions, Grad-CAM generation | 3 | **PASS** |
+| `tests/test_gemini.py` | Multi-model fallback cascade, offline RAG guidance synthesis | 2 | **PASS** |
+| `tests/test_weather.py` | OpenWeatherMap and Open-Meteo telemetry & risk heuristics | 2 | **PASS** |
+| `tests/test_integration.py` | Complete end-to-end diagnosis pipeline in English and Marathi | 2 | **PASS** |
+| `tests/test_dataset_tools.py` | Offline dataset split tools and distribution reports | 2 | **PASS** |
+| `tests/test_model.py` | MobileNetV3 backbone freezing and custom 13-class linear head | 1 | **PASS** |
+| **Total Regression Suite** | **Comprehensive End-to-End System** | **144** | **100% PASS** |
 
 ---
 
-## 7. Architectural Summary for Project Defense
+## 7. Architectural Summary for Defense
 
-1. **Decoupled Intelligence:** Perception (MobileNetV3) is strictly decoupled from Reasoning (Gemini). The neural network does what it does best (visual feature extraction), while the LLM does what it does best (contextual synthesis and communication).
-2. **Deterministic Grounding:** The LLM is strictly constrained by a FAISS vector store containing official ICAR research chunks, eliminating hallucinated chemical recommendations.
-3. **Resilient Cascading:** Free-tier rate limits and network outages are mitigated via a 4-tier model cascade and a 100% offline semantic intent matcher.
-4. **Rural-First Engineering:** Accessibility is built into the core architecture via real-time microclimate epidemiology, native Marathi/English language toggles, and conversational human-like neural voice delivery.
+1. **Decoupled Perception and Reasoning:** Vision classification is delegated to MobileNetV3-Large, domain knowledge to ICAR RAG, and communication/synthesis to Gemini.
+2. **Stateful Graph Orchestration:** LangGraph provides clear state boundaries, isolated list reducers, and predictable parallel execution barriers.
+3. **Defense-in-Depth Fallbacks:** Every subsystem (Weather, Soil, RAG, Gemini, TTS) operates with deterministic local fallbacks, ensuring 100% operational uptime even during external cloud outages.
+4. **Academically Honest Disclosures:** Simulated baseline soil data is clearly labeled as synthetic across all API responses and UI cards.

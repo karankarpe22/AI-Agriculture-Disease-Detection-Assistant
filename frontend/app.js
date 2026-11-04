@@ -1446,6 +1446,9 @@ function renderResults(data, options = {}) {
   if (guidanceSections) guidanceSections.style.display = "flex";
   followupCard.style.display = "block";
 
+  // Weather Context extracted early for summary synthesis and weather card
+  const w = data.weather || {};
+
   // 1. Resolve Crop and Disease Names for active language
   const cropDisplay = isMr
     ? (data.crop_mr || CROP_NAME_MAP_MR[data.crop] || CROP_NAME_MAP_MR[data.crop_en] || data.crop || "पीक")
@@ -1543,7 +1546,6 @@ function renderResults(data, options = {}) {
   }
 
   // 4. Weather Context
-  const w = data.weather || {};
   if (isMr) {
     weatherLoc.textContent = w.location_mr || translateCityToMarathi(w.location);
     const condMr = w.condition_mr || translateConditionToMarathi(w.condition);

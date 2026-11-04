@@ -10,7 +10,6 @@ import numpy as np
 import torch
 import yaml
 from PIL import Image
-from torchvision import transforms
 
 from src.preprocessing.quality_check import check_image_quality
 from src.preprocessing.transforms import build_transforms

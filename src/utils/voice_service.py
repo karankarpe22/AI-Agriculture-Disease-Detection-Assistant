@@ -4,10 +4,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import io
-import os
 import re
 from pathlib import Path
-from typing import BinaryIO
 
 # Pre-selected state-of-the-art Azure Neural voices via edge-tts
 NEURAL_VOICES = {

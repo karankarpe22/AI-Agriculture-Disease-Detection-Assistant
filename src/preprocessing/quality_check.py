@@ -17,12 +17,16 @@ class ImageQualityChecker:
         self,
         min_width: int = 100,
         min_height: int = 100,
+        max_width: int = 6000,
+        max_height: int = 6000,
         blur_threshold: float = 35.0,
         dark_threshold: float = 30.0,
         bright_threshold: float = 230.0,
     ) -> None:
         self.min_width = min_width
         self.min_height = min_height
+        self.max_width = max_width
+        self.max_height = max_height
         self.blur_threshold = blur_threshold
         self.dark_threshold = dark_threshold
         self.bright_threshold = bright_threshold
@@ -69,6 +73,22 @@ class ImageQualityChecker:
             user_messages.append(
                 f"Image resolution ({width}x{height}) is too small. Minimum required is {self.min_width}x{self.min_height}."
             )
+        elif width > self.max_width or height > self.max_height:
+            issues.append("excessive_resolution")
+            user_messages.append(
+                f"Image dimensions ({width}x{height}) exceed maximum allowed dimension of {self.max_width}x{self.max_height}."
+            )
+            return {
+                "is_valid": False,
+                "issues": issues,
+                "metrics": {
+                    "width": width,
+                    "height": height,
+                    "brightness": 0.0,
+                    "blur_score": 0.0,
+                },
+                "message": " ".join(user_messages),
+            }
 
         # Convert to grayscale numpy array for photometric & blur checks
         gray = np.array(img.convert("L"), dtype=np.float32)

@@ -1,87 +1,75 @@
 # 📊 AI Agriculture Assistant — System Flowcharts
 
-This document provides visual flowcharts covering the end-to-end execution pipeline, decision gates, parallel processing subsystems, and offline fallback mechanisms.
+This document provides visual flowcharts covering the end-to-end execution pipeline, LangGraph StateGraph DAG, decision gates, parallel context subsystems, and offline fallback mechanisms.
 
 ---
 
-## 1. Master System Flowchart
+## 1. Master LangGraph StateGraph Workflow Flowchart
 
 ```mermaid
 flowchart TD
     Start([Farmer Accesses Application]) --> InputChoice{Choose Mode}
 
     %% Branch A: Leaf Diagnosis
-    InputChoice -->|Mode 1: Leaf Diagnosis| Upload[Upload Leaf Image + Optional Question + City]
+    InputChoice -->|Mode 1: Leaf Diagnosis /analyze| Upload[Upload Leaf Image <= 10MB + City + Question]
     
     %% Branch B: Direct Q&A
-    InputChoice -->|Mode 2: Ask Agronomist| DirectQ[Enter Farming Question + Select Crop + City]
+    InputChoice -->|Mode 2: Ask Agronomist /ask| DirectQ[Enter Farming Question + Optional Crop/Disease + City]
+
+    %% Mode Routing in LangGraph
+    Upload --> QualityNode["quality_node (Quality Inspection Gate)"]
+    DirectQ --> SetupAsk["setup_ask_context (Extract Intent & Normalize Crop)"]
 
     %% Quality Check Gate
-    Upload --> QCheck{Image Quality Check<br/>src/preprocessing/quality_check.py}
+    QualityNode --> QCheck{Image Quality Check Passed?<br/>Blur >= 35.0, 30 <= Brightness <= 230, Dim >= 100px}
     
-    QCheck -->|Resolution < 100x100| RejectLowRes[Reject: Resolution Too Small]
-    QCheck -->|Brightness < 30| RejectDark[Reject: Image Too Dark / Night]
-    QCheck -->|Brightness > 230| RejectBright[Reject: Image Overexposed / Glare]
-    QCheck -->|Laplacian Var < 35.0| RejectBlur[Reject: Image Out of Focus / Blurry]
+    QCheck -->|No: Low Res / Blurry / Glare| EarlyExit["Early Termination -> END<br/>Return Quality Remediations (No Model/LLM Spent)"]
     
-    RejectLowRes --> ReUploadPrompt[Prompt Farmer: Steady Camera & Capture in Good Daylight]
-    RejectDark --> ReUploadPrompt
-    RejectBright --> ReUploadPrompt
-    RejectBlur --> ReUploadPrompt
-    ReUploadPrompt --> Upload
-
     %% Valid Image Processing
-    QCheck -->|Image Quality Valid| Normalize[Tensor Normalization 224x224<br/>ImageNet Z-Score Standardization]
+    QCheck -->|Yes: Valid Leaf Photo| PredictionNode["prediction_node (MobileNetV3-Large)<br/>Top-3 Predictions & Softmax Confidence"]
 
-    Normalize --> MobileNet[MobileNetV3-Large Classifier<br/>src/prediction/predict.py]
-    
-    MobileNet --> Softmax[Compute Softmax Class Probabilities<br/>13 Agricultural Disease Classes]
-    
-    Softmax --> ConfCheck{Confidence >= 60%?}
-    ConfCheck -->|Yes: High Confidence| ConfFlag[Status: Verified Diagnosis]
-    ConfCheck -->|No: Low Confidence| WarnFlag[Flag: Low Confidence Warning<br/>Recommend KVK Extension Verification]
+    %% Parallel Context Fan-Out
+    PredictionNode --> FanOut
+    SetupAsk --> FanOut
 
-    MobileNet --> GradCAM[Grad-CAM Saliency Hook<br/>Compute Gradients on features-1<br/>Generate Heatmap Overlay]
-
-    %% Parallel Context Ingestion
-    Softmax --> JoinContext
-    DirectQ --> JoinContext
-    
-    subgraph ParallelServices ["Parallel Context Ingestion"]
-        JoinContext --> WeatherTask[Fetch Weather & Microclimate Risk<br/>Open-Meteo API / OpenWeatherMap]
-        JoinContext --> RAGTask[FAISS Semantic Retrieval<br/>Top-3 ICAR Research Chunks]
+    subgraph ParallelServices ["Parallel Context Ingestion Layer (Concurrent Async Tasks)"]
+        FanOut --> WeatherNode["weather_node<br/>Live OpenWeatherMap & Open-Meteo<br/>Epidemiological Fungal/Bacterial Risk"]
+        FanOut --> SoilNode["soil_node<br/>100-Record Synthetic Maharashtra Soil Dataset<br/>5-Tier Fallback Hierarchy"]
+        FanOut --> RAGNode["rag_node<br/>FAISS Dense Vector Cosine Search (62 Chunks)<br/>Automatic Lexical Keyword Overlap Fallback"]
+        FanOut -.->|If Grad-CAM Enabled| GradCAMNode["gradcam_node<br/>features.16.0 Conv Layer Hook<br/>Visual Saliency Heatmap Overlay"]
     end
 
-    WeatherTask --> Synthesize
-    RAGTask --> Synthesize
-    ConfFlag --> Synthesize
-    WarnFlag --> Synthesize
+    WeatherNode --> Barrier["context_aggregation_node<br/>(Deterministic Synchronized Join Barrier)"]
+    SoilNode --> Barrier
+    RAGNode --> Barrier
+    GradCAMNode -.-> Barrier
 
     %% Generative Advisory with Fallback
     subgraph ReasoningLayer ["Advisory Synthesis & Fallback Cascade"]
-        Synthesize[Aggregate Context: Diagnosis + Evidence + Microclimate + Question]
-        Synthesize --> CallGemini{Call Gemini Multi-Model Cascade}
+        Barrier --> GeminiNode["gemini_guidance_node<br/>(Single LLM Invocation Budget)"]
+        GeminiNode --> CallGemini{Call Google GenAI SDK}
         
-        CallGemini -->|HTTP 200: Success| LLMResponse[Gemini Model Generation<br/>gemini-flash-lite / gemini-3.6-flash]
+        CallGemini -->|HTTP 200: Success| LLMResponse[Primary: gemini-2.5-flash]
         
-        CallGemini -->|HTTP 429 Quota or 503 Outage| NextModel{Try Next Model in Cascade?}
-        NextModel -->|Model Available| CallGemini
-        NextModel -->|All Models Exhausted / Offline| OfflineEngine[Smart Offline Semantic Intent Engine<br/>Regex Parser: where, what, why, symptoms, neem, spray]
+        CallGemini -->|HTTP 429 Rate Limit / 503| RetryCandidate{Try Candidate Chain}
+        RetryCandidate -->|Model Available| FallbackModels[gemini-2.0-flash / gemini-1.5-flash]
+        RetryCandidate -->|All Cloud Quotas Exhausted| OfflineEngine[Deterministic Offline RAG Template Engine<br/>Synthesizes Exact ICAR Evidence into Structured JSON]
     end
 
-    LLMResponse --> SchemaValidation[Enforce Strict JSON Schema<br/>direct_answer, management, prevention, precautions]
+    LLMResponse --> SchemaValidation[Enforce Strict JSON Schema & State Output]
+    FallbackModels --> SchemaValidation
     OfflineEngine --> SchemaValidation
 
     %% Output Presentation Layer
     subgraph OutputLayer ["Farmer Output & Accessibility"]
-        SchemaValidation --> DisplayUI[Render Clean UI: Disease Tag, Meter, Evidence, Formatted Advisory]
-        GradCAM --> DisplayUI
+        SchemaValidation --> StateAdapter[state_to_api_response() -> JSON]
+        StateAdapter --> DisplayUI[Render UI: Disease Badge, Meter, Heatmap, Grounded Advisory]
         
-        DisplayUI --> TTSCheck{Farmer Clicks Listen?}
-        TTSCheck -->|Yes| AudioCache{Audio Cached in Disk?<br/>outputs/audio_cache/MD5.mp3}
+        DisplayUI --> TTSCheck{Farmer Clicks Audio Listen?}
+        TTSCheck -->|Yes| AudioCache{Audio Cached on Disk?<br/>outputs/audio_cache/MD5.mp3}
         
         AudioCache -->|Cache Hit| FastAudio[Load Audio < 2ms]
-        AudioCache -->|Cache Miss| AzureTTS[Azure Neural TTS: edge-tts<br/>en-IN-Neerja / mr-IN-Aarohi<br/>Normalize °C, g/L, WP @ 2.5]
+        AudioCache -->|Cache Miss| AzureTTS[Azure Neural TTS: edge-tts<br/>mr-IN-AarohiNeural / en-IN-Neerja<br/>gTTS Backup Engine]
         AzureTTS --> SaveCache[Save MP3 to Disk Cache]
         SaveCache --> FastAudio
         
@@ -92,85 +80,113 @@ flowchart TD
 
 ---
 
-## 2. Image Quality Gate Decision Flowchart
+## 2. 5-Tier Soil Health Hierarchical Matching Flowchart
 
 ```mermaid
 flowchart TD
-    ImgIn([Input Leaf Photo]) --> Read[Decode Image Bytes to RGB]
+    SoilReq([Input: Farmer Location + Crop]) --> CleanLoc[Normalize Location: Sub-basin Aliases<br/>e.g. Akurdi -> Pune, Baramati -> Pune]
+    CleanLoc --> CleanCrop[Normalize Crop to Canonical Soil Vocabulary]
+
+    CleanCrop --> Tier1{Tier 1: Exact District + Exact Crop?}
+    Tier1 -->|Match Found| ReturnT1[Return Exact Soil Record<br/>match_method = 'exact']
+
+    Tier1 -->|No Match| Tier2{Tier 2: District + Crop Family?}
+    Tier2 -->|Match Found| ReturnT2[Return Family Matched Record<br/>match_method = 'district_crop_family']
+
+    Tier2 -->|No Match| Tier3{Tier 3: District Average?}
+    Tier3 -->|Match Found| ReturnT3[Return District Average Profile<br/>match_method = 'district_average'<br/>is_fallback = true]
+
+    Tier3 -->|No Match| Tier4{Tier 4: State Agro-Climatic Zone Average?}
+    Tier4 -->|Match Found| ReturnT4[Return State Zone Average Profile<br/>match_method = 'state_crop_average'<br/>is_fallback = true]
+
+    Tier4 -->|No Match| Tier5[Tier 5: Deterministic Maharashtra Benchmark<br/>Medium Black Soil, pH 7.2, NPK Baseline<br/>match_method = 'default_benchmark'<br/>is_fallback = true]
+
+    ReturnT1 --> AttachDisclosure[Attach Mandatory Synthetic Disclosures in EN & MR]
+    ReturnT2 --> AttachDisclosure
+    ReturnT3 --> AttachDisclosure
+    ReturnT4 --> AttachDisclosure
+    ReturnT5 --> AttachDisclosure
+    AttachDisclosure --> OutSoil([Return Validated SoilHealthRecord to Graph])
+```
+
+---
+
+## 3. Image Quality Gate Decision Flowchart
+
+```mermaid
+flowchart TD
+    ImgIn([Input Leaf Photo]) --> BoundedRead{Bounded Stream Read<br/>content <= 10MB?}
+    BoundedRead -->|Exceeds 10MB| Err413[Return HTTP 413: Payload Too Large]
+    BoundedRead -->|Empty (0 bytes)| Err400[Return HTTP 400: Empty File]
     
-    Read --> SizeGate{Width >= 100 px<br/>AND<br/>Height >= 100 px?}
-    SizeGate -->|No| ErrSize[Return error: low_resolution]
+    BoundedRead -->|Valid Size| Decode[Decode Image Bytes to RGB]
     
-    SizeGate -->|Yes| Gray[Convert to Grayscale Luma]
+    Decode --> SizeGate{Width >= 100 px<br/>AND<br/>Height >= 100 px?}
+    SizeGate -->|No| ErrSize[Return quality error: low_resolution]
+    
+    SizeGate -->|Yes| AspectGate{Aspect Ratio <= 3.0?}
+    AspectGate -->|No| ErrAspect[Return quality error: extreme_aspect_ratio]
+    
+    AspectGate -->|Yes| Gray[Convert to Grayscale Luma]
     Gray --> BrightCalc[Calculate Mean Pixel Brightness: μ]
     
     BrightCalc --> DarkGate{μ < 30.0?}
-    DarkGate -->|Yes| ErrDark[Return error: too_dark / underexposed]
+    DarkGate -->|Yes| ErrDark[Return quality error: too_dark / underexposed]
     
     DarkGate -->|No| BrightGate{μ > 230.0?}
-    BrightGate -->|Yes| ErrBright[Return error: too_bright / flash glare]
+    BrightGate -->|Yes| ErrBright[Return quality error: too_bright / flash glare]
     
-    BrightGate -->|No| BlurCalc[Convolve with 3x3 Laplacian Kernel<br/>Calculate Variance: Var∇²I]
+    BrightGate -->|No| BlurCalc[Convolve with 3x3 Laplacian Kernel<br/>Calculate Variance: Var∇²I via SciPy]
     
     BlurCalc --> BlurGate{Var >= 35.0?}
-    BlurGate -->|No| ErrBlur[Return error: excessive_blur]
+    BlurGate -->|No| ErrBlur[Return quality error: excessive_blur]
     
     BlurGate -->|Yes| Pass([Quality Check Passed: Proceed to MobileNetV3])
 ```
 
 ---
 
-## 3. RAG & Gemini Multi-Model Cascade Flowchart
+## 4. RAG & Gemini Multi-Model Cascade Flowchart
 
 ```mermaid
 flowchart TD
-    QueryIn([Diagnosed Disease + Farmer Query]) --> RAGFilter[Filter ICAR Knowledge Base by Crop & Disease]
+    QueryIn([Diagnosed Disease + Farmer Query]) --> RAGFilter[Filter 13 ICAR Knowledge Guides by Crop & Disease]
     
-    RAGFilter --> Embed[Generate 384-dim Dense Vector<br/>paraphrase-multilingual-MiniLM-L12-v2]
+    RAGFilter --> Embed[Generate 384-dim Dense Vector<br/>all-MiniLM-L6-v2 Embeddings]
     
-    Embed --> FAISSSearch[FAISS IndexFlatL2 Cosine Search]
-    FAISSSearch --> Chunks[Extract Top-3 Grounded Evidence Chunks]
+    Embed --> FAISSSearch{FAISS Index Loaded & Healthy?}
+    FAISSSearch -->|Yes| DenseSearch[FAISS IndexFlatIP Cosine Search]
+    FAISSSearch -->|No / Corrupted| KeywordSearch[Lexical Keyword Token Overlap Search]
     
-    Chunks --> PromptBuilder[Construct Grounded Prompt with Strict JSON Schema]
+    DenseSearch --> Chunks[Extract Top-3 Grounded Evidence Chunks]
+    KeywordSearch --> Chunks
     
-    PromptBuilder --> TryM1[Try Model 1: gemini-flash-lite-latest]
+    Chunks --> PromptBuilder[Construct Tripartite Prompt: Disease + Weather + Soil + ICAR]
+    
+    PromptBuilder --> TryM1[Try Model 1: gemini-2.5-flash]
     
     TryM1 -->|Success 200| ValidJSON[Validate JSON Schema]
-    TryM1 -->|Error 429 / 503| TryM2[Try Model 2: gemini-3.6-flash]
+    TryM1 -->|Error 429 / 503| TryM2[Try Model 2: gemini-2.0-flash]
     
     TryM2 -->|Success 200| ValidJSON
-    TryM2 -->|Error 429 / 503| TryM3[Try Model 3: gemini-flash-latest]
+    TryM2 -->|Error 429 / 503| TryM3[Try Model 3: gemini-1.5-flash]
     
     TryM3 -->|Success 200| ValidJSON
-    TryM3 -->|Error 429 / 503| TryM4[Try Model 4: gemini-2.5-flash]
+    TryM3 -->|All Models Exhausted / Disconnected| OfflineRAG[Activate Deterministic Offline RAG Fallback Engine]
     
-    TryM4 -->|Success 200| ValidJSON
-    TryM4 -->|Network Down / Quotas Exhausted| OfflineIntent[Activate Smart Offline Intent Matcher]
+    OfflineRAG --> SynthesizeRAG[Synthesize Grounded Advisory Directly from ICAR Chunks in EN & MR]
+    SynthesizeRAG --> ValidJSON
     
-    OfflineIntent --> DetectIntent{Regex Intent Classification}
-    DetectIntent -->|Where does it occur?| IntentWhere[Return Plant Organ: Lower foliage, stems, tubers]
-    DetectIntent -->|What is it?| IntentWhat[Return Pathogen Definition: Alternaria / Xanthomonas]
-    DetectIntent -->|Why did it happen?| IntentWhy[Return Environmental Cause: Humidity + Spores]
-    DetectIntent -->|Symptoms?| IntentSymp[Return Visual Cues: Target rings, chlorotic halos]
-    DetectIntent -->|Sprays / Neem?| IntentSpray[Return ICAR Fungicide Dosage: Mancozeb 75% WP @ 2g/L]
-    
-    IntentWhere --> FormatOffline[Format Grounded Offline Advisory JSON]
-    IntentWhat --> FormatOffline
-    IntentWhy --> FormatOffline
-    IntentSymp --> FormatOffline
-    IntentSpray --> FormatOffline
-    
-    FormatOffline --> Output([Return Advisory to Farmer])
-    ValidJSON --> Output
+    ValidJSON --> Output([Return Advisory to LangGraph Context Aggregation])
 ```
 
 ---
 
-## 4. Text-to-Speech (TTS) Normalization & Caching Flowchart
+## 5. Text-to-Speech (TTS) Normalization & Caching Flowchart
 
 ```mermaid
 flowchart TD
-    InputText([Advisory Text in English or Marathi]) --> Hash[Compute MD5 Hash of Text + Language]
+    InputText([Advisory Text in English or Marathi]) --> Hash[Compute MD5 Hash of Text + Target Language]
     
     Hash --> CheckDisk{File exists in<br/>outputs/audio_cache/hash.mp3?}
     
@@ -194,70 +210,67 @@ flowchart TD
     CallEdge -->|Success| SaveDisk[Write MP3 to outputs/audio_cache/hash.mp3]
     SaveDisk --> StreamAudio
     
-    CallEdge -->|Failure / Network Timeout| FallbackBrowser[Client-Side Web Speech API Fallback]
-    FallbackBrowser --> StreamAudio
+    CallEdge -->|Failure / Network Timeout| FallbackgTTS[Fallback to gTTS Engine]
+    FallbackgTTS --> SaveDisk
 ```
 
 ---
 
-## 5. ASCII System Flowchart (For Project Reports & PPT Slides)
+## 6. ASCII System Flowchart (For Project Reports & PPT Slides)
 
 ```text
 ================================================================================================
-                                AI AGRICULTURE ASSISTANT FLOWCHART
+                       AI AGRICULTURE ASSISTANT (KRISHI SAHAYYAK) FLOWCHART
 ================================================================================================
 
- [ Farmer Uploads Leaf Image ]               [ Farmer Enters Direct Question ]
-              │                                              │
-              ▼                                              │
-  ┌───────────────────────┐                                  │
-  │  Image Quality Gate   │                                  │
-  │ • Blur (Laplacian)    │──[Fail: Blur/Dark/Glare]──► [ Re-Prompt Farmer with Advice ]
-  │ • Brightness (Exposure│                                  │
-  │ • Resolution (>=100px)│                                  │
-  └───────────┬───────────┘                                  │
-              │ (Pass)                                       │
-              ▼                                              │
-  ┌───────────────────────┐                                  │
-  │ MobileNetV3-Large CNN │                                  │
-  │ • Softmax Probability │                                  │
-  │ • Grad-CAM Heatmap    │                                  │
-  └───────────┬───────────┘                                  │
-              │                                              │
-              ▼                                              ▼
-  ┌────────────────────────────────────────────────────────────────────────┐
-  │                 Parallel Context Ingestion Engine                      │
-  │  • Real-Time Weather: Open-Meteo (Humidity, Temp, Infection Risk)      │
-  │  • RAG Vector Retrieval: FAISS + ICAR Grounded Research Evidence Chunks│
-  └───────────────────────────────────┬────────────────────────────────────┘
-                                      │
-                                      ▼
-  ┌────────────────────────────────────────────────────────────────────────┐
-  │               Google Gemini Multi-Model Cascade Layer                  │
-  │  Primary: gemini-flash-lite  ──► Secondary: gemini-3.6-flash           │
-  │  (Fallback on 429 Quota Exceeded / 503 Network Unavailable)            │
-  └───────────────────────────────────┬────────────────────────────────────┘
-                                      │
-              ┌───────────────────────┴───────────────────────┐
-              ▼                                               ▼
-     [ Gemini Online ]                              [ Network / Quota Offline ]
-  Enforce Strict JSON Schema                     Smart Semantic Intent Regex Engine
-  (Direct Answer, Sprays, Safety)                (Where, What, Why, Symptoms, Neem)
-              │                                               │
-              └───────────────────────┬───────────────────────┘
-                                      ▼
-  ┌────────────────────────────────────────────────────────────────────────┐
-  │                         Farmer Results Panel                           │
-  │  • Primary Disease & Calibrated Confidence Meter                       │
-  │  • Grad-CAM Visual Heatmap Highlighting Foliar Lesions                 │
-  │  • Direct Answer to Question + ICAR Management & Prevention            │
-  └───────────────────────────────────┬────────────────────────────────────┘
-                                      │
-                                      ▼
-  ┌────────────────────────────────────────────────────────────────────────┐
-  │                  Human-Like Neural Speech Subsystem                    │
-  │  • Disk Cache Lookup (<2ms)                                            │
-  │  • Agricultural Text Normalizer (°C, g/L, WP @ 2.5)                    │
-  │  • Microsoft Azure Neural Voice: Neerja (English) & Aarohi (Marathi)   │
-  └────────────────────────────────────────────────────────────────────────┘
+  [ Farmer Uploads Leaf Image <= 10MB ]       [ Farmer Enters Direct Question ]
+                 │                                           │
+                 ▼                                           │
+   ┌───────────────────────────┐                             │
+   │    quality_node           │                             │
+   │ • Laplacian Blur (Var>=35)│──[Fail: Blurry/Dark/Glare]─► [ Early Exit -> END ]
+   │ • Brightness (30 to 230)  │                             │ (No Model/LLM Compute Spent)
+   │ • Dimensions (>=100px)    │                             │
+   └─────────────┬─────────────┘                             │
+                 │ (Pass)                                    ▼
+                 ▼                             ┌───────────────────────────┐
+   ┌───────────────────────────┐               │    setup_ask_context      │
+   │     prediction_node       │               │ • Intent Classification   │
+   │ • MobileNetV3-Large CNN   │               │ • Crop Synonym Mapping    │
+   │ • Top-3 Classes + Softmax │               └─────────────┬─────────────┘
+   └─────────────┬─────────────┘                             │
+                 │                                           │
+                 ▼                                           ▼
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │             Asynchronous Parallel Context Ingestion Branches          │
+   │ • weather_node : Live OpenWeatherMap / Open-Meteo Fallback + Risk     │
+   │ • soil_node    : 100-Record Synthetic Maharashtra Soil Dataset (5-Tier)│
+   │ • rag_node     : FAISS Dense Cosine Search + Lexical Keyword Fallback │
+   │ • gradcam_node : Layer features.16.0 Attention Heatmap Overlay        │
+   └───────────────────────────────────┬───────────────────────────────────┘
+                                       │
+                                       ▼
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │        context_aggregation_node (Synchronized Join Barrier)           │
+   │ • Awaits All Context Tasks (Deterministic Barrier Ordering)           │
+   │ • Formats Tripartite Context (Disease + Microclimate + Soil)          │
+   └───────────────────────────────────┬───────────────────────────────────┘
+                                       │
+                                       ▼
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │      gemini_guidance_node (Strict Single Cloud Call Budget)           │
+   │ • Candidate Cascade: gemini-2.5-flash -> 2.0-flash -> 1.5-flash       │
+   │ • Deterministic Offline RAG Fallback: Synthesizes ICAR Chunks         │
+   │ • Outputs Bilingual Structured Advisory in English and Marathi        │
+   └───────────────────────────────────┬───────────────────────────────────┘
+                                       │
+                                       ▼
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │                       Farmer Results Interface                        │
+   │ • Primary Foliar Diagnosis with Confidence Meter                      │
+   │ • Visual Grad-CAM Lesion Saliency Heatmap                             │
+   │ • Agro-Climatic Soil Chemistry & Live Epidemiological Weather Card    │
+   │ • Grounded Agronomist Advisory & Prevention Measures (EN/MR)          │
+   │ • Sub-2ms Neural Voice Audio Playback (Edge-TTS Azure Engine)         │
+   └───────────────────────────────────────────────────────────────────────┘
 ```
