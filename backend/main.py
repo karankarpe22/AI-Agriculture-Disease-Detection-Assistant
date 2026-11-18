@@ -19,46 +19,45 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
+import torch
 
 from src.gemini.guidance_service import get_gemini_service
-from src.prediction.predict import DiseasePredictor
+from src.prediction.service import get_predictor
 from src.rag.vector_store import get_rag_service
+from src.utils.memory import log_memory
 from src.utils.voice_service import get_voice_service
 from src.soil.soil_service import get_soil_service
 from src.weather.weather_service import get_weather_service
 from src.graph.state import create_initial_state, state_to_api_response
 from src.graph.workflow import run_agriculture_workflow
 
+# Keep CPU thread pool compact on low-resource container environments (Render 512MB RAM)
+if not torch.cuda.is_available():
+    torch.set_num_threads(min(2, max(1, os.cpu_count() or 1)))
+
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("backend.main")
-
-# Singleton services (lazy-loaded with startup warmup)
-_predictor: DiseasePredictor | None = None
-
-
-def get_predictor() -> DiseasePredictor:
-    """Singleton getter for DiseasePredictor to avoid reloading weights per request."""
-    global _predictor
-    if _predictor is None:
-        _predictor = DiseasePredictor()
-    return _predictor
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager: Pre-warms ML models and vector indices on startup."""
+    log_memory("Startup Begin", logger)
     logger.info("Initializing AI Agriculture Assistant Backend...")
     try:
-        # Pre-warm MobileNetV3 model into memory
+        # Pre-warm shared MobileNetV3 model into memory
         predictor = await run_in_threadpool(get_predictor)
+        log_memory("After MobileNetV3 Warmup", logger)
         logger.info(f"MobileNetV3 loaded ({len(predictor.class_names)} classes) on {predictor.device}.")
     except Exception as e:
         logger.warning(f"Predictor warmup note: {e}")
 
     try:
-        # Pre-warm FAISS RAG index and sentence embeddings
+        # Pre-warm FAISS RAG index and chunks metadata into memory
         rag = await run_in_threadpool(get_rag_service)
+        await run_in_threadpool(rag.load_cached_index)
+        log_memory("After RAG Index Load", logger)
         logger.info(f"FAISS RAG service loaded ({len(rag.chunks)} research chunks).")
     except Exception as e:
         logger.warning(f"RAG service warmup note: {e}")
@@ -77,6 +76,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Soil service warmup note: {e}")
 
+    log_memory("Startup Complete", logger)
     yield
     logger.info("Shutting down AI Agriculture Assistant Backend.")
 
@@ -255,7 +255,11 @@ def health_check():
         device = "unavailable"
         model_name = f"Error: {e}"
 
-    rag_ready = Path("models/rag_index.faiss").exists() or Path("knowledge_base").exists()
+    try:
+        rag_service = get_rag_service()
+        rag_ready = rag_service.is_ready()
+    except Exception:
+        rag_ready = Path("models/rag_index.faiss").exists() or Path("knowledge_base").exists()
     gemini_ready = bool(os.getenv("GEMINI_API_KEY", "").strip())
     weather_provider = "OpenWeatherMap" if os.getenv("WEATHER_API_KEY", "").strip() else "Open-Meteo (Live)"
 
@@ -302,6 +306,7 @@ async def predict_crop_disease(
     include_gradcam: bool = Form(False),
 ):
     """Run Image Quality Check -> MobileNetV3 disease classification offloaded to threadpool."""
+    log_memory("Before /predict", logger)
     content = await image.read(MAX_FILE_SIZE_BYTES + 1)
     validate_image_file(image, content)
 
@@ -318,12 +323,14 @@ async def predict_crop_disease(
         except Exception as e:
             result["gradcam_error"] = str(e)
 
+    log_memory("After /predict", logger)
     return result
 
 
 @app.post("/ask")
 async def ask_question(request: AskRequest):
     """Retrieve agricultural evidence and generate Gemini guidance for follow-up or standalone queries."""
+    log_memory("Before /ask", logger)
     initial_state = create_initial_state(
         request_type="ask",
         user_question=request.question,
@@ -335,6 +342,7 @@ async def ask_question(request: AskRequest):
         is_low_confidence=request.is_low_confidence,
     )
     final_state = await run_agriculture_workflow(initial_state)
+    log_memory("After /ask", logger)
     return state_to_api_response(final_state)
 
 
@@ -347,6 +355,7 @@ async def analyze_leaf(
     include_gradcam: bool = Form(False),
 ):
     """End-to-End Pipeline: Image -> Quality Check -> MobileNetV3 -> Weather -> RAG -> Gemini."""
+    log_memory("Before /analyze", logger)
     content = await image.read(MAX_FILE_SIZE_BYTES + 1)
     validate_image_file(image, content)
 
@@ -359,6 +368,7 @@ async def analyze_leaf(
         include_gradcam=include_gradcam,
     )
     final_state = await run_agriculture_workflow(initial_state)
+    log_memory("After /analyze", logger)
     return state_to_api_response(final_state)
 
 

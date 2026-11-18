@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 from src.gemini.guidance_service import get_gemini_service
 from src.graph.state import AgricultureAssistantState
-from src.prediction.predict import DiseasePredictor
+from src.prediction.service import get_predictor
 from src.preprocessing.quality_check import check_image_quality
 from src.rag.vector_store import get_rag_service
 from src.soil.soil_service import get_soil_service
@@ -27,20 +27,10 @@ from src.utils.localization import (
     DISEASE_TRANSLATIONS,
     localize_weather_data,
 )
+from src.utils.memory import log_memory
 from src.weather.weather_service import get_weather_service
 
 logger = logging.getLogger("src.graph.nodes")
-
-# Module-level predictor singleton to avoid reloading weights across invocations
-_predictor_instance: Optional[DiseasePredictor] = None
-
-
-def get_predictor() -> DiseasePredictor:
-    """Singleton getter for DiseasePredictor to avoid reloading weights per node call."""
-    global _predictor_instance
-    if _predictor_instance is None:
-        _predictor_instance = DiseasePredictor()
-    return _predictor_instance
 
 
 # =============================================================================
@@ -115,6 +105,7 @@ async def prediction_node(state: AgricultureAssistantState) -> dict[str, Any]:
         predictor = get_predictor()
         # Quality check was already executed in quality_node; bypass duplicate run
         pred_res = await asyncio.to_thread(predictor.predict, image_input, bypass_quality_check=True)
+        log_memory("After prediction_node inference", logger)
     except Exception as e:
         error_msg = f"Prediction model execution failed: {str(e)}"
         logger.error(error_msg)
@@ -297,6 +288,7 @@ async def gradcam_node(state: AgricultureAssistantState) -> dict[str, Any]:
     try:
         predictor = get_predictor()
         cam_img = await asyncio.to_thread(predictor.generate_gradcam, image_input)
+        log_memory("After gradcam_node generation", logger)
         if cam_img:
             buf = io.BytesIO()
             cam_img.save(buf, format="JPEG")

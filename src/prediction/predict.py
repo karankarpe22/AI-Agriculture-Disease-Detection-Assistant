@@ -64,6 +64,10 @@ class DiseasePredictor:
     ) -> None:
         self.device = choose_device()
         self.config_path = Path(config_path)
+        if not self.config_path.exists():
+            alt_config = Path(__file__).resolve().parents[2] / config_path
+            if alt_config.exists():
+                self.config_path = alt_config
         self.confidence_threshold = confidence_threshold
 
         # Load config
@@ -83,11 +87,15 @@ class DiseasePredictor:
         self.transform = transform_dict["test"]
 
     def _resolve_checkpoint(self, preferred: str | Path | None) -> Path:
+        project_root = Path(__file__).resolve().parents[2]
         candidates = [
             Path(preferred) if preferred else None,
             Path("models/mobilenetv3_best.pth"),
+            project_root / "models" / "mobilenetv3_best.pth",
             Path("models/mobilenetv3_head_best.pth"),
+            project_root / "models" / "mobilenetv3_head_best.pth",
             Path("models/mobilenetv3_head_smoke_best.pth"),
+            project_root / "models" / "mobilenetv3_head_smoke_best.pth",
         ]
         for candidate in candidates:
             if candidate and candidate.exists():
@@ -98,18 +106,23 @@ class DiseasePredictor:
 
     def _load_class_names(self) -> list[str]:
         class_names_path = Path("models/class_names.json")
+        if not class_names_path.exists():
+            class_names_path = Path(__file__).resolve().parents[2] / "models" / "class_names.json"
         if class_names_path.exists():
             return json.loads(class_names_path.read_text(encoding="utf-8"))
         # Fallback to config
         return self.config.get("dataset", {}).get("selected_classes", [])
 
     def _load_model(self) -> torch.nn.Module:
+        import gc
         num_classes = len(self.class_names)
         model = build_mobilenetv3_large(num_classes=num_classes, freeze_backbone=False)
         checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
         model.load_state_dict(checkpoint["model_state_dict"])
         model.to(self.device)
         model.eval()
+        del checkpoint
+        gc.collect()
         return model
 
     def predict(
@@ -251,6 +264,13 @@ class DiseasePredictor:
             weights = torch.mean(grad, dim=(2, 3), keepdim=True)  # [1, C, 1, 1]
             cam = torch.sum(weights * act, dim=1, keepdim=True)    # [1, 1, H, W]
             cam = torch.relu(cam).squeeze().cpu().numpy()
+
+            # Clean up intermediate tensors immediately
+            del activations, gradients, act, grad, weights, tensor_img, logits
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            import gc
+            gc.collect()
 
             cam_min, cam_max = cam.min(), cam.max()
             if cam_max > cam_min:

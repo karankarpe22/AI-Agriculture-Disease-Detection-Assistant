@@ -3,32 +3,42 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from pathlib import Path
+import re
+import threading
 from typing import Any
 
 import numpy as np
+
+from src.utils.memory import log_memory
 
 logger = logging.getLogger("src.rag.vector_store")
 
 # Lazy imports for fast startup
 SentenceTransformer = None
 faiss = None
+_encoder_factory_lock = threading.Lock()
+_faiss_import_lock = threading.Lock()
+_rag_singleton_lock = threading.Lock()
 
 
 def load_sentence_transformer(model_name: str = "all-MiniLM-L6-v2"):
     global SentenceTransformer
     if SentenceTransformer is None:
-        from sentence_transformers import SentenceTransformer as ST
-        SentenceTransformer = ST
+        with _encoder_factory_lock:
+            if SentenceTransformer is None:
+                from sentence_transformers import SentenceTransformer as ST
+                SentenceTransformer = ST
     return SentenceTransformer(model_name)
 
 
 def load_faiss():
     global faiss
     if faiss is None:
-        import faiss as f
-        faiss = f
+        with _faiss_import_lock:
+            if faiss is None:
+                import faiss as f
+                faiss = f
     return faiss
 
 
@@ -41,19 +51,70 @@ class AgriculturalRAG:
         index_cache_dir: str | Path = "models",
         embedding_model_name: str = "all-MiniLM-L6-v2",
     ) -> None:
+        project_root = Path(__file__).resolve().parents[2]
+
         self.kb_dir = Path(knowledge_base_dir)
+        if not self.kb_dir.is_absolute() and not self.kb_dir.exists():
+            alt_kb = project_root / knowledge_base_dir
+            if alt_kb.exists():
+                self.kb_dir = alt_kb
+
         self.cache_dir = Path(index_cache_dir)
+        if not self.cache_dir.is_absolute() and not self.cache_dir.exists():
+            alt_cache = project_root / index_cache_dir
+            if alt_cache.exists():
+                self.cache_dir = alt_cache
+
         self.model_name = embedding_model_name
         self.encoder = None
         self.index = None
         self.chunks: list[dict[str, Any]] = []
 
+        self._encoder_lock = threading.Lock()
+        self._index_lock = threading.Lock()
+
         self.index_file = self.cache_dir / "rag_index.faiss"
         self.chunks_file = self.cache_dir / "rag_chunks.json"
 
+    def is_ready(self) -> bool:
+        """Return True if FAISS index and chunks are loaded and ready in memory."""
+        if self.index is not None and len(self.chunks) > 0:
+            return True
+        return self.load_cached_index()
+
+    def load_cached_index(self) -> bool:
+        """Load precomputed FAISS index and chunk metadata from disk if available."""
+        if self.index is not None and self.chunks:
+            return True
+        with self._index_lock:
+            if self.index is not None and self.chunks:
+                return True
+            if self.index_file.exists() and self.chunks_file.exists():
+                try:
+                    log_memory("Before FAISS Index Load", logger)
+                    faiss_module = load_faiss()
+                    self.index = faiss_module.read_index(str(self.index_file))
+                    self.chunks = json.loads(self.chunks_file.read_text(encoding="utf-8"))
+                    log_memory("After FAISS Index Load", logger)
+                    logger.info(
+                        "Loaded cached FAISS index (%d chunks) from %s",
+                        len(self.chunks),
+                        self.index_file,
+                    )
+                    return True
+                except Exception as e:
+                    logger.warning("Error loading cached index (%s): %s", self.index_file, e)
+            return False
+
     def _ensure_encoder(self):
         if self.encoder is None:
-            self.encoder = load_sentence_transformer(self.model_name)
+            with self._encoder_lock:
+                if self.encoder is None:
+                    log_memory("Before SentenceTransformer Load", logger)
+                    logger.info("Initializing SentenceTransformer encoder ('%s')...", self.model_name)
+                    self.encoder = load_sentence_transformer(self.model_name)
+                    log_memory("After SentenceTransformer Load", logger)
+                    logger.info("SentenceTransformer encoder ('%s') loaded successfully.", self.model_name)
         return self.encoder
 
     def parse_markdown_document(self, file_path: Path) -> list[dict[str, Any]]:
@@ -127,50 +188,47 @@ class AgriculturalRAG:
 
     def build_index(self, force_rebuild: bool = False) -> None:
         """Parse all markdown files in knowledge_base and build FAISS vector index."""
-        if not force_rebuild and self.index_file.exists() and self.chunks_file.exists():
-            try:
-                faiss_module = load_faiss()
-                self.index = faiss_module.read_index(str(self.index_file))
-                self.chunks = json.loads(self.chunks_file.read_text(encoding="utf-8"))
-                logger.info(f"Loaded existing FAISS index with {len(self.chunks)} chunks.")
+        if not force_rebuild and self.load_cached_index():
+            return
+
+        with self._index_lock:
+            if not force_rebuild and self.load_cached_index():
                 return
-            except Exception as e:
-                logger.warning(f"Error loading cached index ({e}), rebuilding...")
 
-        logger.info("Building agricultural knowledge base index...")
-        all_chunks: list[dict[str, Any]] = []
-        md_files = list(self.kb_dir.glob("*.md"))
-        if not md_files:
-            raise FileNotFoundError(f"No markdown documents found in {self.kb_dir}")
+            logger.info("Building agricultural knowledge base index...")
+            all_chunks: list[dict[str, Any]] = []
+            md_files = list(self.kb_dir.glob("*.md"))
+            if not md_files:
+                raise FileNotFoundError(f"No markdown documents found in {self.kb_dir}")
 
-        for f in md_files:
-            docs = self.parse_markdown_document(f)
-            all_chunks.extend(docs)
+            for f in md_files:
+                docs = self.parse_markdown_document(f)
+                all_chunks.extend(docs)
 
-        logger.info(f"Extracted {len(all_chunks)} sections across {len(md_files)} documents.")
+            logger.info(f"Extracted {len(all_chunks)} sections across {len(md_files)} documents.")
 
-        # Prepare composite text for embedding (incorporates crop & disease context)
-        texts_to_embed = [
-            f"Crop: {c['crop']}. Disease: {c['disease']}. Topic: {c['heading']}.\n{c['content']}"
-            for c in all_chunks
-        ]
+            # Prepare composite text for embedding (incorporates crop & disease context)
+            texts_to_embed = [
+                f"Crop: {c['crop']}. Disease: {c['disease']}. Topic: {c['heading']}.\n{c['content']}"
+                for c in all_chunks
+            ]
 
-        encoder = self._ensure_encoder()
-        embeddings = encoder.encode(texts_to_embed, convert_to_numpy=True, normalize_embeddings=True)
-        embeddings = embeddings.astype(np.float32)
+            encoder = self._ensure_encoder()
+            embeddings = encoder.encode(texts_to_embed, convert_to_numpy=True, normalize_embeddings=True)
+            embeddings = embeddings.astype(np.float32)
 
-        dimension = embeddings.shape[1]
-        faiss_module = load_faiss()
-        # Flat Inner Product on normalized vectors = Cosine Similarity
-        self.index = faiss_module.IndexFlatIP(dimension)
-        self.index.add(embeddings)
-        self.chunks = all_chunks
+            dimension = embeddings.shape[1]
+            faiss_module = load_faiss()
+            # Flat Inner Product on normalized vectors = Cosine Similarity
+            self.index = faiss_module.IndexFlatIP(dimension)
+            self.index.add(embeddings)
+            self.chunks = all_chunks
 
-        # Cache to disk
-        self.cache_dir.mkdir(exist_ok=True)
-        faiss_module.write_index(self.index, str(self.index_file))
-        self.chunks_file.write_text(json.dumps(self.chunks, indent=2), encoding="utf-8")
-        logger.info(f"FAISS index saved to {self.index_file} ({len(self.chunks)} chunks)")
+            # Cache to disk
+            self.cache_dir.mkdir(exist_ok=True)
+            faiss_module.write_index(self.index, str(self.index_file))
+            self.chunks_file.write_text(json.dumps(self.chunks, indent=2), encoding="utf-8")
+            logger.info(f"FAISS index saved to {self.index_file} ({len(self.chunks)} chunks)")
 
     @staticmethod
     def _build_composite_query(
@@ -384,8 +442,18 @@ _default_rag = None
 
 
 def get_rag_service() -> AgriculturalRAG:
-    """Singleton getter for the Agricultural RAG service."""
+    """Singleton getter for the Agricultural RAG service with thread-safe double-checked locking."""
     global _default_rag
     if _default_rag is None:
-        _default_rag = AgriculturalRAG()
+        with _rag_singleton_lock:
+            if _default_rag is None:
+                _default_rag = AgriculturalRAG()
     return _default_rag
+
+
+def reset_rag_service() -> None:
+    """Reset the RAG singleton (primarily used for unit testing)."""
+    global _default_rag
+    with _rag_singleton_lock:
+        _default_rag = None
+        logger.debug("RAG service singleton reset.")

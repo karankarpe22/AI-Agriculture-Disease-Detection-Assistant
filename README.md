@@ -5,7 +5,7 @@
 [![LangGraph](https://img.shields.io/badge/LangGraph-0.2+-FF6F00?logo=chainlink&logoColor=white)](https://langchain-ai.github.io/langgraph/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Google Gemini](https://img.shields.io/badge/Google%20GenAI-Gemini%202.5%20Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
-[![Tests Passing](https://img.shields.io/badge/Tests-144%20Passed-brightgreen)](tests/)
+[![Tests Passing](https://img.shields.io/badge/Tests-150%20Passed-brightgreen)](tests/)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-black?logo=vercel&logoColor=white)](https://krishi-sahayyak.vercel.app)
 [![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=white)](https://krishi-sahayyak.onrender.com)
 
@@ -97,7 +97,7 @@ The core analysis pipeline (`/analyze`) and conversational agronomist mode (`/as
 - **Meteorological Services:** OpenWeatherMap API with automatic zero-key fallback to Open-Meteo API.
 - **Voice Synthesis (TTS):** Microsoft Azure Neural voices (`mr-IN-AarohiNeural`, `en-IN-NeerjaExpressiveNeural`) via `edge-tts>=7.0.0` with `gTTS>=2.5` fallback and MD5-hashed disk caching.
 - **Frontend Presentation:** Responsive HTML5, Vanilla JavaScript (ES6+), Glassmorphism CSS3 design system, Web Speech API for voice STT.
-- **Testing:** `pytest>=8.0` (144 automated unit, integration, and reliability tests).
+- **Testing:** `pytest>=8.0` (150 automated unit, integration, reliability, and memory optimization tests).
 
 ---
 
@@ -181,7 +181,27 @@ The final advisory synthesizes the **Tripartite Context** (Disease Perception + 
 
 ---
 
-## 10. Project Directory Structure
+## 10. Memory Optimization & Low-Resource Container Profile (Render 512 MB Free Tier)
+
+Deploying complex deep learning models, LangGraph orchestration, and vector stores on free container tiers (e.g., Render Free 512 MB RAM limit) requires strict memory governance to prevent Linux OOM-killer termination (`Ran out of memory (used over 512MB)`). The system implements five synergistic optimizations:
+
+1. **Central Shared Predictor Singleton (`src/prediction/service.py`):**
+   - Eliminates duplicate model instantiation across `backend/main.py` and `src/graph/nodes.py`.
+   - Employs thread-safe double-checked locking (`_predictor_lock`) to guarantee exactly one in-memory instance of the MobileNetV3-Large weights (~17 MB) shared globally across all FastAPI endpoints and LangGraph nodes.
+2. **Decoupled RAG Index & Lazy Encoder (`src/rag/vector_store.py`):**
+   - Startup pre-warming loads the precomputed FAISS vector index (`rag_index.faiss`) and chunk metadata (`rag_chunks.json`) directly into memory (~8.7 MB) without importing or initializing `SentenceTransformer`.
+   - `SentenceTransformer("all-MiniLM-L6-v2")` (~113 MB) is loaded strictly on-demand via thread-safe lazy initialization (`_ensure_encoder()`), leaving adequate working memory for inference.
+3. **Explicit Grad-CAM Tensor Lifecycle Management (`src/prediction/predict.py`):**
+   - Immediate disposal of backward computation graphs, feature maps, and gradient tensors (`activations`, `gradients`, `logits`, `tensor_img`) followed by explicit garbage collection (`gc.collect()`), preventing transient memory spikes exceeding 25–40 MB.
+4. **PyTorch OpenMP Thread Capping (`backend/main.py`):**
+   - Restricts PyTorch CPU threads using `torch.set_num_threads(min(2, max(1, os.cpu_count() or 1)))`, preventing thread-stack memory explosion on multi-core host nodes.
+5. **Zero-Dependency Process Memory Diagnostics (`src/utils/memory.py`):**
+   - Cross-platform process RSS & Peak HWM monitoring leveraging `ctypes` (`GetProcessMemoryInfo`) on Windows and `/proc/self/status` on Linux containers without third-party dependencies like `psutil`.
+   - **Empirical Peak Memory:** Full `/analyze` execution with Grad-CAM peaks at **~441.04 MB**, safely below Render's 512 MB threshold (~71 MB safety margin).
+
+---
+
+## 11. Project Directory Structure
 
 ```text
 ├── backend/
@@ -221,13 +241,34 @@ The final advisory synthesizes the **Tripartite Context** (Disease Perception + 
 │   │   ├── state.py                # AgricultureAssistantState TypedDict & reducers
 │   │   └── workflow.py             # Workflow construction, routing & compile
 │   ├── prediction/                 # Vision inference (Top-3 predictions & Grad-CAM)
+│   │   ├── predict.py              # DiseasePredictor class & Grad-CAM hooks
+│   │   ├── service.py              # Central thread-safe MobileNetV3 singleton service
+│   │   └── __init__.py
 │   ├── preprocessing/              # Image quality gates & PyTorch transforms
 │   ├── rag/                        # Agricultural RAG & FAISS vector store
 │   ├── soil/                       # Soil Health Service & 5-tier fallback matcher
 │   ├── training/                   # Model definition (build_mobilenetv3_large) & training
-│   ├── utils/                      # Voice service (Edge TTS + gTTS) & localization
+│   ├── utils/                      # Voice service (Edge TTS + gTTS), localization & memory
+│   │   ├── localization.py         # Centralized bilingual dictionaries & helpers
+│   │   ├── memory.py               # Cross-platform zero-dependency process RSS/HWM tracker
+│   │   ├── voice_service.py        # Neural TTS voice service
+│   │   └── __init__.py
 │   └── __init__.py
-├── tests/                          # Automated Pytest regression test suite (144 tests)
+├── tests/                          # Automated Pytest regression test suite (150 tests)
+│   ├── test_api.py                 # Endpoint contracts & bounded upload validation
+│   ├── test_dataset_tools.py       # Dataset splitter & corrupt file detection
+│   ├── test_gemini.py              # Gemini advisory format & language routing
+│   ├── test_graph_nodes.py         # Asynchronous node execution & error handling
+│   ├── test_graph_state.py         # TypedDict state structure & reducers
+│   ├── test_graph_workflow.py      # End-to-end LangGraph StateGraph DAG execution
+│   ├── test_memory_optimization.py # Singleton identity, thread safety & lazy RAG tests
+│   ├── test_model.py               # MobileNetV3 model architecture & head construction
+│   ├── test_prediction.py          # Vision inference & Grad-CAM heatmap generation
+│   ├── test_rag.py                 # FAISS vector store search & keyword fallback
+│   ├── test_reliability.py         # Malformed inputs, timeout & rate-limit resilience
+│   ├── test_soil.py                # 5-tier soil matching hierarchy & metadata preservation
+│   ├── test_soil_dataset_100.py    # 100-record synthetic soil dataset integrity
+│   └── test_weather.py             # Weather service & disease risk calculation
 ├── .env.example                    # Template environment variables
 ├── .gitignore                      # Git ignore patterns
 ├── config.yaml                     # Central application configuration
@@ -239,7 +280,7 @@ The final advisory synthesizes the **Tripartite Context** (Disease Perception + 
 
 ---
 
-## 11. Quick Start & Execution Guide
+## 12. Quick Start & Execution Guide
 
 ### Prerequisites
 - Python 3.10 – 3.13 (Verified on Python 3.13.5).
@@ -281,15 +322,15 @@ python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 - Interactive Swagger API Documentation: **`http://localhost:8000/docs`**
 
 ### 4. Running the Automated Test Suite
-Execute the comprehensive 144-test regression suite:
+Execute the comprehensive 150-test regression suite:
 ```powershell
 python -m pytest -o pythonpath=. -v
 ```
-**Current Test Status:** `144 passed, 0 failed, 1 warning in ~70-90s`.
+**Current Test Status:** `150 passed, 0 failed, 1 warning`.
 
 ---
 
-## 12. Deployment Architecture
+## 13. Deployment Architecture
 
 | Tier | Platform | Build Command | Start Command | URL |
 | :--- | :--- | :--- | :--- | :--- |
@@ -300,7 +341,7 @@ The frontend automatically detects whether it is running on `localhost` (routing
 
 ---
 
-## 13. Documentation Suite
+## 14. Documentation Suite
 
 For detailed technical specifications, viva defense materials, and workflow diagrams:
 - **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md):** Complete end-to-end system architecture, LangGraph state design, and multi-tier component breakdown.
@@ -309,7 +350,7 @@ For detailed technical specifications, viva defense materials, and workflow diag
 
 ---
 
-## 14. Academic Integrity & Ethics
+## 15. Academic Integrity & Ethics
 
 1. **Synthetic Data Disclosure:** All soil records are synthetic baselines generated for academic illustration. Simulated demonstration values are never misrepresented as certified physical laboratory core samples.
 2. **Safe Chemical Advisory:** Chemical recommendations adhere strictly to ICAR guidelines. The system explicitly instructs farmers to verify advice with local Krishi Vigyan Kendra (KVK) officers before field application.
