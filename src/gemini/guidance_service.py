@@ -21,9 +21,8 @@ logger = logging.getLogger("src.gemini.guidance_service")
 
 # Candidate models in priority order
 DEFAULT_MODELS = [
+    "gemini-3.5-flash-lite",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-1.5-flash",
 ]
 
 
@@ -61,6 +60,41 @@ class GeminiGuidanceService:
         """Generate structured agricultural guidance with multi-model fallback and tripartite EN/MR outputs."""
         lang = (language or "english").lower().strip()
         is_marathi = lang in ["marathi", "mr", "मराठी"]
+
+        # Conversational greeting detection for friendly farmer onboarding
+        clean_q = (farmer_question or "").strip().lower().strip("?!. ")
+        GREETINGS = {"hi", "hello", "hey", "namaste", "namaskar", "good morning", "good afternoon", "good evening", "नमस्ते", "नमस्कार", "हॅलो", "हाय"}
+        if clean_q in GREETINGS:
+            en_greeting = "Hello! I am your AI Agriculture Assistant (Krishi Sahayyak). How can I assist you with your crops today? You can ask me about crop diseases, recommended fungicide/bactericide sprays, fertilizer schedules, or organic pest management for Tomato, Potato, and Bell pepper."
+            mr_greeting = "नमस्कार शेतकरी बंधूंनो! मी आपला कृषी सहाय्यक आहे. आज मी आपल्या शेतीसाठी काय मदत करू शकतो? आपण टोमॅटो, बटाटा किंवा ढोबळी मिरचीवरील रोग, फवारणी वेळापत्रक, खत व्यवस्थापन किंवा सेंद्रिय कीड नियंत्रणाबद्दल प्रश्न विचारू शकता."
+            w_loc = weather.get("location", "your area")
+            w_temp = weather.get("temperature_c", "--")
+            w_hum = weather.get("humidity_percentage", "--")
+            return {
+                "en": {
+                    "direct_answer": en_greeting,
+                    "explanation": "I am ready to analyze leaf photos for disease diagnosis or provide crop guidance based on local weather and soil conditions.",
+                    "weather_interpretation": f"Current weather in {w_loc}: {w_temp}°C with {w_hum}% humidity.",
+                    "soil_interpretation": "Regional soil conditions recorded. Please ask a specific query regarding soil preparation or fertilizer schedules.",
+                    "management_guidance": "• Upload a leaf photo for automated MobileNetV3 disease diagnosis\n• Ask specific questions regarding spray dosage or pest control\n• Check current weather and soil disease risks in your district",
+                    "prevention": "Regular field scouting and balanced fertilization are key to disease prevention.",
+                    "precautions": "Always confirm with a local agricultural extension officer (KVK) before large-scale chemical applications.",
+                    "expert_advisory": "Supported by ICAR and state agricultural university agronomic research packages.",
+                },
+                "mr": {
+                    "direct_answer": mr_greeting,
+                    "explanation": "मी पिकांच्या पानांचे रोग निदान करण्यासाठी आणि स्थानिक हवामान व जमिनीनुसार अचूक सल्ला देण्यासाठी सज्ज आहे.",
+                    "weather_interpretation": f"{weather.get('location_mr', w_loc)} चालू हवामान: तापमान {w_temp}°C आणि आर्द्रता {w_hum}%.",
+                    "soil_interpretation": "स्थानिक जमिनीची नोंद उपलब्ध आहे. खत व्यवस्थापन किंवा मशागतीबद्दल कोणताही प्रश्न विचारू शकता.",
+                    "management_guidance": "• पानाचा फोटो अपलोड करून रोगाचे त्वरित निदान करा\n• फवारणीचे प्रमाण किंवा कीड नियंत्रणाबद्दल थेट विचारा\n• आपल्या जिल्ह्यातील हवामान व रोग जोखीम तपासा",
+                    "prevention": "नियमित शेतीची पाहणी आणि संतुलित खत व्यवस्थापन हे रोग प्रतिबंधासाठी अत्यंत महत्त्वाचे आहे.",
+                    "precautions": "मोठ्या प्रमाणावर रासायनिक फवारणीपूर्वी स्थानिक कृषी सहाय्यक किंवा केव्हीकेचा सल्ला घ्या.",
+                    "expert_advisory": "आयसीएआर (ICAR) आणि महात्मा फुले कृषी विद्यापीठ (राहुरी) च्या शिफारशींवर आधारित.",
+                },
+                "direct_answer_en": en_greeting,
+                "direct_answer_mr": mr_greeting,
+                "direct_answer": mr_greeting if is_marathi else en_greeting,
+            }
 
         # If Gemini API key is available, call official Google GenAI SDK across candidate models
         client = self._get_client()

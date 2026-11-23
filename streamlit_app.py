@@ -1,15 +1,5 @@
-"""Krishi Sahayyak (कृषी सहाय्यक) — High-Fidelity Agronomic Advisory System.
-Faithfully mirrors the full 10-section analytical engine of the HTML/CSS/JS frontend:
-1. Integrated Summary & Direct Answer
-2. Diagnostic Pathology & Symptoms
-3. Weather Impact & Microclimate
-4. Soil Health 4-Metric Grid (pH, Moisture, NPK, Carbon) & Regional Interaction
-5. Recommended Key Actions (Prioritized)
-6. Curative Treatment & Dosage (Chemical + Organic)
-7. Preventive & Cultural Practices
-8. Safety Precautions, PPE & Pre-Harvest Interval (PHI)
-9. Agronomic Research Advisory
-10. Scientific Evidence Citations (RAG)
+"""Krishi Sahayyak (कृषी सहाय्यक) — High-Performance Multilingual AI Agriculture Assistant.
+Fully theme-adaptive (Dark & Light Mode), evidence-grounded agronomic advisory engine.
 """
 from __future__ import annotations
 
@@ -49,7 +39,7 @@ st.set_page_config(
 )
 
 # =============================================================================
-# Premium Agriculture Design System (Matching Original Web Theme)
+# Modern Theme-Adaptive CSS (Flawless Dark Mode & Light Mode)
 # =============================================================================
 CUSTOM_CSS = """
 <style>
@@ -59,18 +49,18 @@ html, body, [class*="css"], [class*="st-"] {
     font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', -apple-system, sans-serif;
 }
 
-/* Header Banner */
+/* Header Banner - Rich Emerald Gradient */
 .hero-header {
     background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #10b981 100%);
     border-radius: 18px;
-    padding: 1.8rem 2.2rem;
+    padding: 1.6rem 2.2rem;
     color: #ffffff;
     margin-bottom: 1.6rem;
-    box-shadow: 0 12px 30px -5px rgba(6, 78, 59, 0.3);
+    box-shadow: 0 12px 30px -5px rgba(6, 78, 59, 0.4);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 .hero-title-main {
     font-size: 2.1rem;
@@ -98,17 +88,17 @@ html, body, [class*="css"], [class*="st-"] {
     gap: 6px;
 }
 
-/* Diagnosis Banner */
+/* Theme-Adaptive Diagnosis Hero Banner */
 .diagnosis-banner {
-    background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%);
-    border: 2px solid #86efac;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.4);
     border-radius: 16px;
     padding: 1.4rem 1.8rem;
     margin-bottom: 1.4rem;
-    box-shadow: 0 6px 18px -3px rgba(16, 185, 129, 0.12);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
 }
 .crop-chip-tag {
-    background: #047857;
+    background: #059669;
     color: #ffffff;
     font-size: 0.82rem;
     font-weight: 700;
@@ -119,13 +109,13 @@ html, body, [class*="css"], [class*="st-"] {
     display: inline-block;
 }
 .disease-title-hero {
-    font-size: 1.9rem;
+    font-size: 1.95rem;
     font-weight: 800;
-    color: #0f172a;
     margin: 0.5rem 0 0.2rem 0;
+    color: var(--text-color, #f8fafc);
 }
 .conf-bar-track {
-    background: #e2e8f0;
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 9999px;
     height: 10px;
     width: 100%;
@@ -138,7 +128,7 @@ html, body, [class*="css"], [class*="st-"] {
     background: linear-gradient(90deg, #10b981, #047857);
 }
 
-/* Soil 4-Metric Grid */
+/* Theme-Adaptive Soil 4-Metric Grid */
 .soil-grid-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -146,8 +136,8 @@ html, body, [class*="css"], [class*="st-"] {
     margin: 0.8rem 0;
 }
 .soil-metric-cell {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
     padding: 0.85rem 0.75rem;
     text-align: center;
@@ -155,58 +145,67 @@ html, body, [class*="css"], [class*="st-"] {
 .soil-metric-lbl {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #64748b;
+    color: #94a3b8;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 .soil-metric-num {
-    font-size: 1.35rem;
+    font-size: 1.45rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #38bdf8;
     margin: 0.2rem 0;
 }
 .soil-metric-rating {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    color: #059669;
+    color: #34d399;
 }
 
-/* Section Header Badges */
+/* High-Contrast Theme-Adaptive Section Header Cards */
 .sec-card-header {
     border-left: 5px solid #059669;
-    background: #f8fafc;
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 0 10px 10px 0;
-    padding: 0.65rem 1rem;
-    margin: 1.2rem 0 0.6rem 0;
+    padding: 0.75rem 1.1rem;
+    margin: 1.4rem 0 0.7rem 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-weight: 700;
-    font-size: 1.08rem;
-    color: #0f172a;
-    border-top: 1px solid #e2e8f0;
-    border-right: 1px solid #e2e8f0;
-    border-bottom: 1px solid #e2e8f0;
+    font-size: 1.12rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.sec-card-header.summary { border-left-color: #6366f1; background: #fdf4ff; color: #4338ca; }
-.sec-card-header.pathology { border-left-color: #0284c7; background: #f0f9ff; color: #0369a1; }
-.sec-card-header.actions { border-left-color: #f59e0b; background: #fffbeb; color: #b45309; }
-.sec-card-header.treatment { border-left-color: #059669; background: #f0fdf4; color: #047857; }
-.sec-card-header.prevention { border-left-color: #0d9488; background: #f0fdfa; color: #0f766e; }
-.sec-card-header.precautions { border-left-color: #e11d48; background: #fff1f2; color: #be123c; }
-.sec-card-header.weather { border-left-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
-.sec-card-header.soil { border-left-color: #d97706; background: #fffbeb; color: #b45309; }
-.sec-card-header.advisory { border-left-color: #8b5cf6; background: #faf5ff; color: #6d28d9; }
+.sec-card-header.summary { border-left-color: #818cf8; background: rgba(99, 102, 241, 0.12); color: #c7d2fe; }
+.sec-card-header.pathology { border-left-color: #38bdf8; background: rgba(2, 132, 199, 0.12); color: #bae6fd; }
+.sec-card-header.actions { border-left-color: #fbbf24; background: rgba(245, 158, 11, 0.12); color: #fde68a; }
+.sec-card-header.treatment { border-left-color: #34d399; background: rgba(16, 185, 129, 0.12); color: #a7f3d0; }
+.sec-card-header.prevention { border-left-color: #2dd4bf; background: rgba(13, 148, 136, 0.12); color: #99f6e4; }
+.sec-card-header.precautions { border-left-color: #fb7185; background: rgba(225, 29, 72, 0.12); color: #fecdd3; }
+.sec-card-header.weather { border-left-color: #60a5fa; background: rgba(59, 130, 246, 0.12); color: #bfdbfe; }
+.sec-card-header.soil { border-left-color: #fb923c; background: rgba(217, 119, 6, 0.12); color: #fed7aa; }
+.sec-card-header.advisory { border-left-color: #c084fc; background: rgba(139, 92, 246, 0.12); color: #ddd6fe; }
+
+/* Friendly Greeting Card */
+.greeting-card {
+    background: linear-gradient(135deg, rgba(6, 78, 59, 0.3) 0%, rgba(99, 102, 241, 0.2) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 14px;
+    padding: 1.4rem;
+    margin-bottom: 1.2rem;
+}
 
 /* Question Callout */
 .question-callout {
-    background: #f1f5f9;
-    border-left: 4px solid #64748b;
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid #94a3b8;
     border-radius: 0 8px 8px 0;
-    padding: 0.6rem 1rem;
+    padding: 0.65rem 1rem;
     font-style: italic;
-    color: #334155;
+    color: #cbd5e1;
     margin-bottom: 0.8rem;
-    font-size: 0.95rem;
+    font-size: 0.96rem;
 }
 
 #MainMenu {visibility: hidden;}
@@ -217,7 +216,7 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 # =============================================================================
-# Cached Services
+# Cached Model Services
 # =============================================================================
 @st.cache_resource(show_spinner="Initializing AI Agriculture models into memory...")
 def get_cached_services():
@@ -240,15 +239,15 @@ services = get_cached_services()
 
 
 # =============================================================================
-# Sidebar
+# Sidebar Controls
 # =============================================================================
 with st.sidebar:
     st.markdown(
         """
         <div style="text-align: center; padding: 0.6rem 0 1rem 0;">
             <div style="font-size: 2.8rem; line-height: 1;">🌱</div>
-            <h2 style="margin: 0.4rem 0 0.1rem 0; font-weight: 800; color: #064e3b; font-size: 1.55rem;">कृषी सहाय्यक</h2>
-            <div style="color: #64748b; font-size: 0.88rem; font-weight: 500;">AI Agriculture Assistant</div>
+            <h2 style="margin: 0.4rem 0 0.1rem 0; font-weight: 800; color: #10b981; font-size: 1.55rem;">कृषी सहाय्यक</h2>
+            <div style="color: #94a3b8; font-size: 0.88rem; font-weight: 500;">AI Agriculture Assistant</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -344,10 +343,10 @@ def decode_base64_image(b64_str: str) -> Image.Image | None:
 
 
 # =============================================================================
-# Complete 10-Section Advisory Renderer (Exact Match to Web Engine)
+# Complete 10-Section Advisory Renderer (Theme-Adaptive & Conversational)
 # =============================================================================
 def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query_text: str = ""):
-    """Renders the comprehensive 10-section agronomic report with genuine markdown formatting."""
+    """Renders the comprehensive 10-section agronomic report with theme-adaptive styling."""
     crop_disp = res.get("crop") or ("सर्वसाधारण शेती सल्ला" if is_marathi else "Agriculture Advisory")
     disease_disp = res.get("disease") or ("कृषी तज्ज्ञ मार्गदर्शन" if is_marathi else "Expert Q&A Guidance")
     conf_pct = res.get("confidence_percentage", 0.0)
@@ -368,6 +367,10 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
     soil_interp = g_lang.get("soil_interpretation") or ""
     advisory_text = g_lang.get("expert_advisory") or ""
 
+    # Friendly greeting detection
+    clean_q = (query_text or "").strip().lower().strip("?!. ")
+    is_greeting = clean_q in {"hi", "hello", "hey", "namaste", "namaskar", "good morning", "नमस्ते", "नमस्कार"}
+
     # Synthesize integrated summary if blank
     if not direct_ans:
         if is_marathi:
@@ -375,7 +378,7 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
         else:
             direct_ans = f"**{crop_disp}** diagnosed with **{disease_disp}** ({conf_pct}% confidence). Local weather and soil conditions indicate integrated curative and preventive measures are required."
 
-    # Priority Action items (extracted from management)
+    # Priority Action items
     actions_text = g_lang.get("recommended_actions") or ""
     if not actions_text and mgmt_text:
         lines = [l.strip() for l in mgmt_text.split("\n") if l.strip()]
@@ -392,7 +395,7 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
             <div class="diagnosis-banner">
                 <span class="crop-chip-tag">🌱 {crop_disp}</span>
                 <div class="disease-title-hero">{disease_disp}</div>
-                <div style="font-size: 0.9rem; color: #047857; font-weight: 600; margin-top: 0.3rem;">
+                <div style="font-size: 0.9rem; color: #34d399; font-weight: 600; margin-top: 0.3rem;">
                     ✅ {"प्रमाणित कृषी तज्ज्ञ सल्ला" if is_marathi else "Verified Agronomic Advisory"}
                 </div>
             </div>
@@ -409,10 +412,10 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
                         <div class="disease-title-hero">{disease_disp}</div>
                     </div>
                     <div style="text-align: right; min-width: 140px;">
-                        <div style="font-size: 1.85rem; font-weight: 800; color: {'#d97706' if is_low_conf else '#059669'};">
+                        <div style="font-size: 1.85rem; font-weight: 800; color: {'#fbbf24' if is_low_conf else '#34d399'};">
                             {conf_pct}%
                         </div>
-                        <div style="font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">
                             {"⚠️ Low Confidence" if is_low_conf else "✅ High Confidence"}
                         </div>
                     </div>
@@ -426,7 +429,7 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
         )
 
     # Audio Read Aloud
-    tts_speech = f"{crop_disp} {disease_disp}. {direct_ans}. {mgmt_text[:300]}"
+    tts_speech = f"{crop_disp} {disease_disp}. {direct_ans}. {mgmt_text[:250]}"
     ok, a_bytes, m_type = services["voice"].text_to_speech_bytes(tts_speech, lang_code)
     if ok and a_bytes:
         audio_cols = st.columns([1, 2])
@@ -438,17 +441,17 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
 
     # SECTION 1: Integrated Summary
     st.markdown(
-        f"""<div class="sec-card-header summary"><span>📋</span> <span>1. {"एकत्रित कृषी सारांश व उत्तर" if is_marathi else "Integrated Summary & Key Advisory"}</span></div>""",
+        f"""<div class="sec-card-header summary"><span>📋</span> <span>1. {"एकत्रित कृषी सारांश व उत्तर" if is_marathi else "Integrated Summary & Answer"}</span></div>""",
         unsafe_allow_html=True,
     )
     if query_text:
         st.markdown(f"""<div class="question-callout">❓ "{query_text}"</div>""", unsafe_allow_html=True)
     st.markdown(direct_ans)
 
-    # SECTION 2: Disease Diagnostic Pathology & Symptoms
-    if explanation_text:
+    # SECTION 2: Disease Diagnostic Pathology & Symptoms (Omit CV vision disclaimer if standalone and no CV run)
+    if explanation_text and not (is_standalone and is_greeting):
         st.markdown(
-            f"""<div class="sec-card-header pathology"><span>🔬</span> <span>2. {"रोग लक्षणे व विकृतीशास्त्र (Diagnostic Pathology)" if is_marathi else "Diagnostic Pathology & Foliar Symptoms"}</span></div>""",
+            f"""<div class="sec-card-header pathology"><span>🔬</span> <span>2. {"रोग लक्षणे व विकृतीशास्त्र" if is_marathi else "Diagnostic Pathology & Foliar Symptoms"}</span></div>""",
             unsafe_allow_html=True,
         )
         st.markdown(explanation_text)
@@ -469,7 +472,7 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
     # SECTION 4: Soil Health Impact (4-Metric Grid + Analysis)
     s = res.get("soil") or {}
     st.markdown(
-        f"""<div class="sec-card-header soil"><span>🪴</span> <span>4. {"मृदा आरोग्य व पोषण प्रभाव (Soil Health Impact)" if is_marathi else "Soil Health Profile & Nutrient Balance"}</span></div>""",
+        f"""<div class="sec-card-header soil"><span>🪴</span> <span>4. {"मृदा आरोग्य व पोषण प्रभाव" if is_marathi else "Soil Health Profile & Nutrient Balance"}</span></div>""",
         unsafe_allow_html=True,
     )
     s_interp = s.get("interpretation") or {}
@@ -480,8 +483,8 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
 
     st.markdown(
         f"""
-        <div style="font-size: 0.92rem; font-weight: 600; color: #475569; margin-bottom: 0.4rem;">
-            🌱 <strong>{s.get('soil_type', 'Medium Black Soil (Vertisol)')}</strong> <span style="background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">🧪 Synthetic Demonstration</span>
+        <div style="font-size: 0.92rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.4rem;">
+            🌱 <strong>{s.get('soil_type', 'Medium Black Soil (Vertisol)')}</strong> <span style="background: rgba(99, 102, 241, 0.2); color: #c7d2fe; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">🧪 Synthetic Demonstration</span>
         </div>
         <div class="soil-grid-container">
             <div class="soil-metric-cell">
@@ -519,7 +522,7 @@ def render_full_advisory(res: dict[str, Any], is_standalone: bool = False, query
         )
         st.markdown(actions_text)
 
-    # SECTION 6 & 7: Curative Treatment & Preventive Practices (2-Column Grid)
+    # SECTION 6 & 7: Curative Treatment & Preventive Practices
     t_c1, t_c2 = st.columns(2, gap="large")
     with t_c1:
         st.markdown(
@@ -652,9 +655,8 @@ with tab_diagnose:
 
     if "diag_result" in st.session_state and st.session_state.get("diag_result"):
         res = st.session_state["diag_result"]
-        st.markdown("<hr style='margin: 1.8rem 0; border: none; border-top: 1px solid #e2e8f0;'/>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 1.8rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);'/>", unsafe_allow_html=True)
 
-        # Grad-CAM Heatmap comparison if present
         gradcam_b64 = res.get("gradcam_base64")
         if gradcam_b64:
             gc1, gc2 = st.columns(2, gap="large")
@@ -703,7 +705,7 @@ with tab_ask:
                 if is_marathi
                 else "e.g. What is the best fertilizer schedule for tomato before flowering? How to prevent potato blight during humid weather?"
             ),
-            height=120,
+            height=110,
             label_visibility="collapsed",
             key="ask_textarea",
         )
@@ -756,9 +758,9 @@ with tab_ask:
         else:
             st.markdown(
                 """
-                <div style="border: 2px dashed #cbd5e1; border-radius: 16px; padding: 3rem 1.5rem; text-align: center; background: #f8fafc; color: #64748b;">
+                <div style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; padding: 3rem 1.5rem; text-align: center; background: rgba(255,255,255,0.02); color: #94a3b8;">
                     <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">👨‍🌾</div>
-                    <div style="font-weight: 600; font-size: 1.1rem; color: #334155;">Ready for your agronomic question</div>
+                    <div style="font-weight: 600; font-size: 1.1rem; color: #f8fafc;">Ready for your agronomic question</div>
                     <div style="font-size: 0.9rem; margin-top: 0.3rem;">Ask any question on the left or select a quick question chip to generate the full 10-section advisory report.</div>
                 </div>
                 """,
@@ -791,7 +793,7 @@ with tab_weather:
     w3.metric("🌧️ Precipitation", f"{w_data.get('precipitation_prob_percent', '--')} %", "Rain Chance")
     w4.metric("💨 Wind Speed", f"{w_data.get('wind_speed_kmh', '--')} km/h", "Spray Drift Factor")
 
-    st.markdown("<hr style='margin: 1.5rem 0; border: none; border-top: 1px solid #e2e8f0;'/>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 1.5rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);'/>", unsafe_allow_html=True)
 
     soil_col1, soil_col2 = st.columns([1, 1], gap="large")
 
@@ -814,7 +816,7 @@ with tab_weather:
         st.info(f"**Bacterial Pathogen Risk:** {bacterial_risk} — Rain splash and leaf surface wetness facilitate Xanthomonas entry through stomata.")
         st.success(f"**Recommended Spray Timing:** Spray early in the morning (6:30 AM – 9:00 AM) when wind speed is below 10 km/h to prevent spray drift.")
 
-st.markdown("<hr style='margin: 2rem 0; border: none; border-top: 1px solid #e2e8f0;'/>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 2rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);'/>", unsafe_allow_html=True)
 st.caption(
     "Krishi Sahayyak • MobileNetV3-Large Classifier • FAISS RAG Knowledge Base • Gemini Multi-Turn Guidance • ICAR & MPKV Rahuri Extension Research"
 )
