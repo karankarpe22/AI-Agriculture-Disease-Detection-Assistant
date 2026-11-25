@@ -15,14 +15,20 @@ import json
 import logging
 import os
 import re
+import time
 from typing import Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger("src.gemini.guidance_service")
 
-# Candidate models in priority order
+# Candidate models in priority order (active on official Google GenAI v1beta API)
 DEFAULT_MODELS = [
     "gemini-3.5-flash-lite",
-    "gemini-2.5-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
 ]
 
 
@@ -31,7 +37,7 @@ class GeminiGuidanceService:
 
     def __init__(self, api_key: str | None = None, model_name: str | None = None) -> None:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "").strip()
-        self.model_name = model_name or "gemini-2.5-flash"
+        self.model_name = model_name or "gemini-3.5-flash-lite"
         self._client = None
 
     def _get_client(self):
@@ -135,6 +141,8 @@ class GeminiGuidanceService:
                     is_busy = "503" in err_str or "UNAVAILABLE" in err_str
                     if is_rate_limit or is_busy:
                         logger.warning(f"Gemini model '{m}' rate-limited or busy. Trying next model...")
+                        if is_busy:
+                            time.sleep(1.0)
                         continue
                     else:
                         logger.warning(f"Gemini call on '{m}' failed: {e}. Trying next model...")

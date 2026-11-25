@@ -398,7 +398,8 @@ async def translate_text(request: TranslateRequest):
         try:
             target_desc = "authentic spoken Marathi for a farmer in Maharashtra" if is_to_marathi else "clear, simple English"
             prompt = f"Translate the following agricultural query or advice accurately into {target_desc}. Do not add extra chatter, return only the direct translation:\n\n{text}"
-            response = await run_in_threadpool(client.models.generate_content, model="gemini-2.5-flash", contents=prompt)
+            model_to_use = getattr(gemini, "model_name", "gemini-3.5-flash-lite")
+            response = await run_in_threadpool(client.models.generate_content, model=model_to_use, contents=prompt)
             tr_text = response.text.strip()
             return {"success": True, "translated_text": tr_text, "method": "gemini"}
         except Exception as e:
