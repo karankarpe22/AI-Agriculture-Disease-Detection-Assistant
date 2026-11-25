@@ -303,6 +303,10 @@ with st.sidebar:
         st.write(f"• **RAG Knowledge Base:** {len(services['rag'].chunks)} Research Chunks")
         st.write("• **Weather Engine:** Live Open-Meteo & OWM")
         st.write("• **Soil Health Service:** Synthetic Regional Records (ICAR)")
+        has_gemini = bool(os.getenv("GEMINI_API_KEY", "").strip())
+        has_openai = bool(os.getenv("OPENAI_API_KEY", "").strip() or os.getenv("CHATGPT_API_KEY", "").strip())
+        llm_label = "Gemini + ChatGPT Fallback" if (has_gemini and has_openai) else ("ChatGPT Active" if has_openai else ("Gemini Active" if has_gemini else "ICAR RAG Offline"))
+        st.write(f"• **AI Advisor Engine:** {llm_label}")
         st.write("• **Device:** CPU Mode (Optimized)")
 
 

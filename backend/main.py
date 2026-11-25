@@ -9,6 +9,7 @@ import io
 import logging
 import os
 from pathlib import Path
+import requests
 
 load_dotenv()
 
@@ -256,7 +257,11 @@ def health_check():
         model_name = f"Error: {e}"
 
     rag_ready = Path("models/rag_index.faiss").exists() or Path("knowledge_base").exists()
-    gemini_ready = bool(os.getenv("GEMINI_API_KEY", "").strip())
+    gemini_ready = bool(
+        os.getenv("GEMINI_API_KEY", "").strip()
+        or os.getenv("OPENAI_API_KEY", "").strip()
+        or os.getenv("CHATGPT_API_KEY", "").strip()
+    )
     weather_provider = "OpenWeatherMap" if os.getenv("WEATHER_API_KEY", "").strip() else "Open-Meteo (Live)"
 
     soil_ready = len(get_soil_service().records) > 0
@@ -404,7 +409,32 @@ async def translate_text(request: TranslateRequest):
         except Exception as e:
             logger.warning(f"Gemini translation fallback: {e}")
 
-    # 3. Heuristic translation fallback
+    # 3. Try ChatGPT (OpenAI) translation fallback if configured
+    openai_key = os.getenv("OPENAI_API_KEY", "").strip() or os.getenv("CHATGPT_API_KEY", "").strip()
+    if openai_key:
+        try:
+            target_desc = "authentic spoken Marathi for a farmer in Maharashtra" if is_to_marathi else "clear, simple English"
+            prompt = f"Translate the following agricultural query or advice accurately into {target_desc}. Do not add extra chatter, return only the direct translation:\n\n{text}"
+            def _call_openai_translate():
+                r = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.2,
+                    },
+                    timeout=15,
+                )
+                r.raise_for_status()
+                return r.json()["choices"][0]["message"]["content"].strip()
+
+            tr_text = await run_in_threadpool(_call_openai_translate)
+            return {"success": True, "translated_text": tr_text, "method": "chatgpt"}
+        except Exception as e:
+            logger.warning(f"ChatGPT translation fallback: {e}")
+
+    # 4. Heuristic translation fallback
     return {"success": True, "translated_text": text, "method": "original"}
 
 

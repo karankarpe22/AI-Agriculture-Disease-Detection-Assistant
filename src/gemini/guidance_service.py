@@ -16,6 +16,7 @@ import logging
 import os
 import re
 from typing import Any
+import requests
 
 logger = logging.getLogger("src.gemini.guidance_service")
 
@@ -140,7 +141,53 @@ class GeminiGuidanceService:
                         logger.warning(f"Gemini call on '{m}' failed: {e}. Trying next model...")
                         continue
 
-            logger.info("All Gemini candidate models were exhausted or unavailable. Falling back to grounded RAG formatter.")
+            logger.info("All Gemini candidate models were exhausted or unavailable. Checking ChatGPT (OpenAI) fallback...")
+
+        # Automatic ChatGPT / OpenAI Fallback Model (when Gemini key is exhausted, rate-limited, or absent)
+        openai_key = os.getenv("OPENAI_API_KEY", "").strip() or os.getenv("CHATGPT_API_KEY", "").strip()
+        if openai_key:
+            configured_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
+            openai_models = [configured_model, "gpt-4o-mini", "gpt-3.5-turbo"]
+            # Deduplicate preserving order
+            seen_models: set[str] = set()
+            candidate_openai = [m for m in openai_models if not (m in seen_models or seen_models.add(m))]
+
+            for o_model in candidate_openai:
+                try:
+                    logger.info(f"Invoking ChatGPT fallback model: {o_model}")
+                    guidance = self._call_openai(
+                        api_key=openai_key,
+                        model=o_model,
+                        crop=crop,
+                        disease=disease,
+                        confidence=confidence,
+                        weather=weather,
+                        evidence=retrieved_evidence,
+                        question=farmer_question,
+                        is_marathi=is_marathi,
+                        is_low_confidence=is_low_confidence,
+                        soil=soil,
+                    )
+                    if guidance:
+                        self._ensure_bilingual_completeness(
+                            guidance=guidance,
+                            crop=crop,
+                            disease=disease,
+                            confidence=confidence,
+                            weather=weather,
+                            evidence=retrieved_evidence,
+                            question=farmer_question,
+                            is_marathi=is_marathi,
+                            is_low_confidence=is_low_confidence,
+                            soil=soil,
+                        )
+                        logger.info(f"ChatGPT ({o_model}) response successfully synthesized and verified.")
+                        return guidance
+                except Exception as e:
+                    logger.warning(f"ChatGPT fallback on '{o_model}' failed: {e}. Trying next candidate...")
+                    continue
+
+        logger.info("LLM models exhausted or unconfigured. Falling back to grounded RAG formatter.")
 
         # Robust Evidence-Grounded Fallback Engine
         return self._fallback_grounded_guidance(
@@ -389,6 +436,84 @@ Return ONLY valid JSON. Do not include markdown ticks like ```json."""
 
         except Exception as e:
             logger.warning(f"Failed to parse Gemini JSON output: {e}. Raw was: {raw_text[:200]}")
+            return None
+
+    def _call_openai(
+        self,
+        api_key: str,
+        model: str,
+        crop: str,
+        disease: str,
+        confidence: float,
+        weather: dict[str, Any],
+        evidence: list[dict[str, Any]],
+        question: str | None,
+        is_marathi: bool,
+        is_low_confidence: bool,
+        soil: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """Fallback LLM invocation using OpenAI ChatGPT Chat Completions API."""
+        prompt = self._build_prompt(
+            crop, disease, confidence, weather, evidence, question, is_marathi, is_low_confidence, soil=soil
+        )
+
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert AI Agriculture Assistant advising an Indian farmer in Maharashtra. "
+                        "You must strictly ground your agricultural guidance in the provided context and return "
+                        "valid JSON containing exactly two top-level objects: 'en' and 'mr'."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.4,
+        }
+
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        raw_text = data["choices"][0]["message"]["content"].strip()
+        clean_text = re.sub(r"^```json\s*", "", raw_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r"^```\s*", "", clean_text)
+        clean_text = re.sub(r"\s*```$", "", clean_text).strip()
+
+        try:
+            parsed = json.loads(clean_text)
+            en_block = parsed.get("en") if isinstance(parsed.get("en"), dict) else {}
+            mr_block = parsed.get("mr") if isinstance(parsed.get("mr"), dict) else {}
+
+            if not en_block and not mr_block:
+                if is_marathi:
+                    mr_block = dict(parsed)
+                else:
+                    en_block = dict(parsed)
+
+            target_block = mr_block if (is_marathi and mr_block) else (en_block or parsed)
+            guidance = dict(target_block)
+            guidance["en"] = en_block or guidance
+            guidance["mr"] = mr_block or {}
+            guidance["language"] = "marathi" if is_marathi else "english"
+            guidance["powered_by"] = f"ChatGPT ({model})"
+
+            if not guidance.get("direct_answer"):
+                guidance["direct_answer"] = (
+                    mr_block.get("direct_answer") if is_marathi else en_block.get("direct_answer", "")
+                )
+
+            return guidance
+
+        except Exception as e:
+            logger.warning(f"Failed to parse ChatGPT JSON output: {e}. Raw was: {raw_text[:200]}")
             return None
 
     def _fallback_grounded_guidance(
